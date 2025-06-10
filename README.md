@@ -38,7 +38,7 @@ A comprehensive Linear integration plugin for Obsidian that provides seamless bi
 
 ### Installation
 
-1. **Download**: Get the latest release from [GitHub Releases](https://github.com/linear-obsidian/obsidian-linear-plugin/releases)
+1. **Download**: Get the latest release from [GitHub Releases](https://github.com/casals/obsidian-linear-integration-plugin/releases)
 2. **Install**: Extract to `.obsidian/plugins/linear-integration/` in your vault
 3. **Enable**: Go to Settings → Community Plugins → Enable "Linear Integration"
 
@@ -320,7 +320,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
@@ -330,10 +330,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Documentation**: [Plugin Wiki](https://github.com/your-username/obsidian-linear-plugin/wiki)
-- **Issues**: [GitHub Issues](https://github.com/your-username/obsidian-linear-plugin/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/obsidian-linear-plugin/discussions)
-- **Discord**: [Obsidian Community](https://discord.gg/obsidianmd)
+- **Issues**: [GitHub Issues](https://github.com/casals/obsidian-linear-integration-plugin/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/casals/obsidian-linear-integration-plugin/discussions)
 
 ## 🔄 Recent Updates
 
@@ -361,7 +359,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 
-**[⭐ Star us on GitHub](https://github.com/your-username/obsidian-linear-plugin)** | **[📖 Read the Docs](https://github.com/your-username/obsidian-linear-plugin/wiki)** | **[🐛 Report Issues](https://github.com/your-username/obsidian-linear-plugin/issues)**
+**[⭐ Star us on GitHub](https://github.com/casals/obsidian-linear-integration-plugin)** | **[🐛 Report Issues](https://github.com/casals/obsidian-linear-integration-plugin/issues)**
 
 Made with ❤️ for the Obsidian and Linear communities
 
