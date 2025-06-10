@@ -1,8 +1,661 @@
-/*
+/* Linear Integration Plugin Styles */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.emoji-quick-picks {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
 
-If your plugin does not need CSS, delete this file.
+.emoji-label {
+    font-size: 0.9em;
+    color: var(--text-muted);
+    margin-right: 8px;
+}
 
-*/
+.emoji-quick-pick {
+    padding: 4px 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-secondary);
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: background-color 0.15s ease;
+}
+
+.emoji-quick-pick:hover {
+    background: var(--background-modifier-hover);
+}
+
+/* Base styles for Linear integration elements */
+.linear-issue-status {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.linear-issue-meta {
+    color: var(--text-muted);
+    font-size: 0.9em;
+    margin: 8px 0;
+}
+
+.linear-sync-notice {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin: 16px 0;
+    font-size: 0.9em;
+    color: var(--text-muted);
+}
+
+/* Modal styles */
+.modal-button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+/* Ribbon icon styles */
+.linear-ribbon-icon {
+    color: var(--text-muted);
+}
+
+.linear-ribbon-icon:hover {
+    color: var(--text-normal);
+}
+
+/* Settings specific styles */
+.setting-item-description {
+    margin-bottom: 8px;
+}
+
+/* Status mapping styles */
+.status-mapping-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+}
+
+.status-mapping-item input {
+    max-width: 60px;
+    text-align: center;
+}
+
+/* Autocomplete styles */
+.linear-autocomplete-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.linear-autocomplete-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.linear-autocomplete-item.is-selected {
+    background: var(--background-modifier-active-hover);
+}
+
+/* Color dot for labels */
+.color-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced label styling with colors */
+.linear-autocomplete-item.label-group {
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.linear-autocomplete-item.label-child {
+    padding-left: 20px;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+}
+
+/* Override the static color styling when we have dynamic colors */
+.linear-autocomplete-item[style*="border-left"].label-group,
+.linear-autocomplete-item[style*="border-left"].label-child {
+    background: unset; /* Remove static background */
+}
+
+/* Enhanced icon area for color dots */
+.linear-autocomplete-icon .color-dot {
+    margin: 0 auto;
+}
+
+.linear-autocomplete-item.label-child .linear-autocomplete-label {
+    font-size: 0.9em;
+}
+
+.linear-autocomplete-icon {
+    font-size: 1.2em;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.linear-autocomplete-label {
+    font-weight: 500;
+    color: var(--text-normal);
+    flex-grow: 1;
+}
+
+.linear-autocomplete-description {
+    font-size: 0.9em;
+    color: var(--text-muted);
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* Tooltip styles */
+.linear-tooltip {
+    position: absolute;
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-width: 350px;
+    z-index: 1000;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.tooltip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+
+.issue-identifier {
+    font-weight: 600;
+    color: var(--text-accent);
+    font-family: var(--font-monospace);
+}
+
+.issue-status {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.issue-status.backlog { 
+    background: var(--background-secondary); 
+    color: var(--text-muted); 
+}
+.issue-status.unstarted { 
+    background: #f5f5f5; 
+    color: #666; 
+}
+.issue-status.started { 
+    background: #e3f2fd; 
+    color: #1976d2; 
+}
+.issue-status.completed { 
+    background: #e8f5e8; 
+    color: #2e7d32; 
+}
+.issue-status.cancelled { 
+    background: #ffebee; 
+    color: #c62828; 
+}
+
+.tooltip-title {
+    font-weight: 500;
+    margin-bottom: 8px;
+    line-height: 1.3;
+    color: var(--text-normal);
+}
+
+.tooltip-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 8px;
+    font-size: 0.8em;
+    color: var(--text-muted);
+}
+
+.tooltip-meta span {
+    display: block;
+}
+
+.tooltip-description {
+    margin-bottom: 8px;
+    line-height: 1.4;
+    color: var(--text-normal);
+    max-height: 80px;
+    overflow: hidden;
+    position: relative;
+}
+
+.tooltip-description.truncated::after {
+    content: "...";
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: var(--background-primary);
+    padding-left: 20px;
+}
+
+.tooltip-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.tooltip-actions button {
+    padding: 4px 8px;
+    font-size: 0.8em;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 3px;
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.tooltip-actions button:hover {
+    background: var(--background-modifier-hover);
+}
+
+/* Conflict resolution styles */
+.conflict-intro {
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    line-height: 1.4;
+}
+
+.conflict-section {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background: var(--background-secondary-alt);
+}
+
+.conflict-header {
+    margin: 0 0 12px 0;
+    color: var(--text-accent);
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.conflict-comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.conflict-option {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 12px;
+    background: var(--background-primary);
+}
+
+.conflict-option h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.9em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.conflict-value {
+    min-height: 40px;
+    padding: 8px;
+    border-radius: 3px;
+    font-family: var(--font-monospace);
+    font-size: 0.9em;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    line-height: 1.4;
+}
+
+.linear-value {
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+.obsidian-value {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    border: 1px solid #e1bee7;
+}
+
+.conflict-resolution h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.9em;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.conflict-batch-btn {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    margin-right: 8px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    color: var(--text-normal);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.conflict-batch-btn:hover {
+    background: var(--background-modifier-hover);
+}
+
+/* Kanban and agenda styles */
+.linear-kanban-column {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background: var(--background-secondary);
+}
+
+.linear-kanban-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.linear-kanban-count {
+    background: var(--text-accent);
+    color: var(--text-on-accent);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+.linear-issue-card {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    background: var(--background-primary);
+    transition: box-shadow 0.2s ease, transform 0.1s ease;
+    cursor: pointer;
+}
+
+.linear-issue-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.linear-issue-title {
+    font-weight: 500;
+    margin-bottom: 4px;
+    line-height: 1.3;
+    color: var(--text-normal);
+}
+
+.linear-issue-details {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* Enhanced file explorer integration */
+.linear-file-badge {
+    display: inline-block;
+    background: var(--text-accent);
+    color: var(--text-on-accent);
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-size: 0.7em;
+    font-weight: 500;
+    margin-left: 4px;
+    vertical-align: top;
+}
+
+/* Priority indicators */
+.priority-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+
+.priority-1 { background: #f44336; }
+.priority-2 { background: #ff9800; }
+.priority-3 { background: #ffeb3b; }
+.priority-4 { background: #4caf50; }
+.priority-0 { background: #9e9e9e; }
+
+/* Inline tag styles */
+.linear-inline-tag {
+    display: inline-block;
+    background: var(--tag-background);
+    color: var(--tag-color);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    margin: 0 2px;
+    text-decoration: none;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.linear-inline-tag:hover {
+    background: var(--background-modifier-hover);
+}
+
+.linear-inline-tag.tag-assignee {
+    background: #e3f2fd;
+    color: #1976d2;
+    border-color: #bbdefb;
+}
+
+.linear-inline-tag.tag-status {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    border-color: #e1bee7;
+}
+
+.linear-inline-tag.tag-priority {
+    background: #fff3e0;
+    color: #f57c00;
+    border-color: #ffcc02;
+}
+
+.linear-inline-tag.tag-label {
+    background: #e8f5e8;
+    color: #2e7d32;
+    border-color: #c8e6c9;
+}
+
+/* Quick edit modal styles */
+.linear-quick-edit {
+    min-width: 400px;
+}
+
+.linear-quick-edit .setting-item {
+    border: none;
+    padding: 8px 0;
+}
+
+.linear-quick-edit .setting-item-info {
+    margin-right: 16px;
+}
+
+.linear-quick-edit .setting-item-control {
+    min-width: 200px;
+}
+
+/* Loading states */
+.linear-loading {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.linear-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid var(--background-modifier-border);
+    border-top-color: var(--text-accent);
+    border-radius: 50%;
+    animation: linear-spin 1s linear infinite;
+}
+
+@keyframes linear-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Status-specific colors */
+.status-todo { color: #666; }
+.status-in-progress { color: #1976d2; }
+.status-in-review { color: #f57c00; }
+.status-done { color: #2e7d32; }
+.status-canceled { color: #c62828; }
+
+/* Dark mode adjustments */
+.theme-dark .linear-value {
+    background: #1e3a8a;
+    color: #93c5fd;
+    border-color: #3b82f6;
+}
+
+.theme-dark .obsidian-value {
+    background: #581c87;
+    color: #d8b4fe;
+    border-color: #8b5cf6;
+}
+
+.theme-dark .tooltip-actions button {
+    background: var(--background-primary);
+    border-color: var(--background-modifier-border-hover);
+}
+
+.theme-dark .linear-tooltip {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.theme-dark .issue-status.backlog {
+    background: #374151;
+    color: #9ca3af;
+}
+
+.theme-dark .issue-status.unstarted {
+    background: #374151;
+    color: #9ca3af;
+}
+
+.theme-dark .issue-status.started {
+    background: #1e3a8a;
+    color: #93c5fd;
+}
+
+.theme-dark .issue-status.completed {
+    background: #166534;
+    color: #86efac;
+}
+
+.theme-dark .issue-status.cancelled {
+    background: #991b1b;
+    color: #fca5a5;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .conflict-comparison {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .linear-tooltip {
+        max-width: 280px;
+        font-size: 0.8em;
+    }
+    
+    .tooltip-actions {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .modal-button-container {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+/* Accessibility improvements */
+.linear-autocomplete-item:focus,
+.tooltip-actions button:focus,
+.conflict-batch-btn:focus {
+    outline: 2px solid var(--text-accent);
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .linear-tooltip {
+        border-width: 2px;
+    }
+    
+    .linear-issue-card {
+        border-width: 2px;
+    }
+    
+    .priority-indicator {
+        border: 1px solid var(--text-normal);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .linear-issue-card,
+    .linear-autocomplete-item,
+    .tooltip-actions button,
+    .conflict-batch-btn {
+        transition: none;
+    }
+    
+    .linear-loading::after {
+        animation: none;
+    }
+    
+    .linear-issue-card:hover {
+        transform: none;
+    }
+}

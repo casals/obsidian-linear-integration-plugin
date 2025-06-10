@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
-	"isDesktopOnly": false
+    "id": "linear-integration",
+    "name": "Linear Integration",
+    "version": "1.0.0",
+    "minAppVersion": "0.15.0",
+    "description": "Sync Linear (https://linear.app) issues with Obsidian notes. Create, update, and track Linear issues directly from your vault.",
+    "author": "casals",
+    "authorUrl": "https://github.com/casals",
+    "fundingUrl": "https://github.com/sponsors/casals",
+    "isDesktopOnly": false
 }

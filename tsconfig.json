@@ -4,21 +4,45 @@
     "inlineSourceMap": true,
     "inlineSources": true,
     "module": "ESNext",
-    "target": "ES6",
+    "target": "ES2020",
     "allowJs": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "moduleResolution": "node",
     "importHelpers": true,
-    "isolatedModules": true,
-    "strictNullChecks": true,
+    "declaration": false,
+    "outDir": "./dist",
+    "typeRoots": [
+      "node_modules/@types"
+    ],
     "lib": [
       "DOM",
-      "ES5",
       "ES6",
-      "ES7"
-    ]
+      "ES2020"
+    ],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "removeComments": false,
+    "preserveConstEnums": true,
+    "sourceMap": false
   },
   "include": [
-    "**/*.ts"
+    "**/*.ts",
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts"
   ]
 }

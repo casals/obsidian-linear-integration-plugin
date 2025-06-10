@@ -1,0 +1,73 @@
+{
+  "_comment": "This is an example .linear.json configuration file that can be placed in any folder to customize Linear integration behavior for notes in that folder and its subfolders.",
+  
+  "workspace": "my-company",
+  "team": "engineering",
+  "project": "q4-roadmap",
+  
+  "defaultAssignee": "john.doe@company.com",
+  "defaultPriority": 3,
+  "autoSync": true,
+  
+  "labels": [
+    "frontend",
+    "backend",
+    "bug-fix"
+  ],
+  
+  "template": "# {{title}}\n\n**Status:** {{status}} | **Priority:** {{priority}}\n**Assignee:** {{assignee}} | **Team:** {{team}}\n\n## Context\n{{description}}\n\n## Acceptance Criteria\n- [ ] \n\n## Notes\n\n\n---\n*Linear: [{{identifier}}]({{url}}) | Last synced: {{lastSync}}*",
+  
+  "syncRules": {
+    "bidirectional": true,
+    "conflictResolution": "manual",
+    "includeComments": true,
+    "mirrorHistory": false
+  },
+  
+  "automation": {
+    "createOnSave": false,
+    "updateOnModify": true,
+    "syncInterval": 300,
+    "batchOperations": true
+  },
+  
+  "display": {
+    "showTooltips": true,
+    "enableQuickEdit": true,
+    "inlineReferences": true,
+    "statusIcons": {
+      "Backlog": "📋",
+      "Todo": "📝", 
+      "In Progress": "🔄",
+      "In Review": "👀",
+      "Done": "✅",
+      "Canceled": "❌"
+    }
+  },
+  
+  "integrations": {
+    "kanbanGeneration": {
+      "enabled": true,
+      "groupBy": "status",
+      "showEstimates": true,
+      "includeDescription": false
+    },
+    "agendaGeneration": {
+      "enabled": true,
+      "daysAhead": 7,
+      "includeOverdue": true,
+      "groupByDate": true
+    }
+  },
+  
+  "advanced": {
+    "customFields": {
+      "epic": "Epic",
+      "story_points": "Story Points",
+      "technical_debt": "Technical Debt"
+    },
+    "webhookUrl": "https://api.mycompany.com/linear-webhook",
+    "apiRateLimit": 100,
+    "retryAttempts": 3
+  }
+}

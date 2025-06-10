@@ -1,94 +1,368 @@
-# Obsidian Sample Plugin
+# Linear Integration for Obsidian
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+A comprehensive Linear integration plugin for Obsidian that provides seamless bidirectional synchronization between your notes and Linear issues. Create, sync, and manage Linear issues directly from Obsidian with advanced features like autocomplete, conflict resolution, and automatic label creation.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## ✨ Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+### Core Functionality
+- **🔄 Bidirectional Sync**: Keep Linear issues and Obsidian notes in perfect sync
+- **📝 Issue Creation**: Convert markdown notes to Linear issues with inline tags and auto-fill
+- **🏷️ Smart Tag Support**: Use `@assignee/john`, `@status/done`, `@label/bug`, `@priority/1` syntax
+- **⚡ Real-time Autocomplete**: Smart suggestions for users, statuses, labels, projects, and teams
+- **🎨 Color-coded Labels**: Visual label organization with Linear's actual colors
+- **🔍 Quick Edit**: Edit Linear issues without leaving Obsidian
+- **💡 Interactive Tooltips**: Hover over issue links to see instant previews with actions
 
-## First time developing plugins?
+### Advanced Sync Features
+- **⚔️ Intelligent Conflict Resolution**: Smart detection and resolution of sync conflicts
+- **🤖 Auto-fill from Expressions**: Automatically populate issue fields from note content
+- **🏷️ Dynamic Label Creation**: Automatically create new labels when they don't exist
+- **📊 API Retry Logic**: Robust API handling with exponential backoff
+- **⚙️ Granular Settings**: Fine-tune autocomplete, tooltips, and auto-fill behavior
 
-Quick starting guide for new plugin devs:
+### Productivity Features
+- **📋 Kanban Generation**: Auto-generate kanban boards from your Linear issues
+- **📅 Agenda Views**: Create agenda notes with due dates and priorities
+- **💬 Comment Mirroring**: Sync Linear comments to your notes
+- **🚀 Batch Operations**: Bulk create/update issues across multiple notes
+- **🎯 Custom Status Mapping**: Map Linear statuses to your preferred emojis
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+### Enterprise Features
+- **🏢 Multi-workspace Support**: Handle multiple Linear organizations
+- **🔐 Secure Token Storage**: Encrypted API key management
+- **⚙️ Local Configuration**: Per-folder `.linear.json` config files
+- **📊 Conflict Analytics**: Track and analyze sync conflicts
+- **🎯 Advanced Filtering**: Custom GraphQL queries and filters
 
-## Releasing new releases
+## 🚀 Quick Start
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+### Installation
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+1. **Download**: Get the latest release from [GitHub Releases](https://github.com/linear-obsidian/obsidian-linear-plugin/releases)
+2. **Install**: Extract to `.obsidian/plugins/linear-integration/` in your vault
+3. **Enable**: Go to Settings → Community Plugins → Enable "Linear Integration"
 
-## Adding your plugin to the community plugin list
+### Setup
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+1. **Get API Key**: Go to [Linear Settings → API](https://linear.app/settings/api) and create a Personal API Key
+2. **Configure Plugin**: 
+   - Open Obsidian Settings → Linear Integration
+   - Enter your API key (`lin_api_...`)
+   - Click "Test Connection" to verify
+   - Select your default team
+   - Configure auto-fill and autocomplete settings
 
-## How to use
+### Basic Usage
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+#### Creating Issues from Notes
 
-## Manually installing the plugin
+Add inline tags to any note:
+```markdown
+# Bug: Login validation not working 
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+@team/Engineering @assignee/sarah.jones @priority/1 @status/In Progress @label/critical @label/frontend
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
+The login form doesn't validate email addresses properly when users enter malformed addresses.
 
-## Funding URL
+Steps to reproduce:
+1. Navigate to login page
+2. Enter invalid email format
+3. Submit form
 
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+Expected: Validation error shown
+Actual: Form submits successfully
 ```
 
-If you have multiple URLs, you can also do:
+Then run the "Create Linear Issue from Note" command or use `Ctrl/Cmd + P` → "Linear: Create Issue".
+
+#### Auto-fill from Expressions
+
+Enable "Auto-fill from Note Expressions" in settings to automatically populate issue fields:
+
+- **Team**: `@team/Engineering` → Auto-selects Engineering team
+- **Assignee**: `@assignee/john.doe` → Auto-assigns to John Doe  
+- **Priority**: `@priority/1` → Sets to Urgent priority
+- **Status**: `@status/In Progress` → Sets initial status
+- **Labels**: `@label/bug @label/urgent` → Creates and assigns labels
+
+#### Syncing Existing Issues
+
+Use the sync button in the ribbon or run "Sync Linear Issues" command to pull your Linear issues into Obsidian.
+
+## 📖 Documentation
+
+### Enhanced Inline Tag Syntax
+
+| Tag Type | Syntax | Example | Auto-complete |
+|----------|--------|---------|---------------|
+| Team | `@team/team-name` | `@team/Engineering` | ✅ |
+| Assignee | `@assignee/username` | `@assignee/john.doe` | ✅ |
+| Status | `@status/status-name` | `@status/In Progress` | ✅ |
+| Priority | `@priority/number` | `@priority/1` | ✅ |
+| Project | `@project/project-name` | `@project/Q4 Roadmap` | ✅ |
+| Labels | `@label/label-name` | `@label/bug @label/urgent` | ✅ |
+
+**Note**: All tags support spaces in names (e.g., `@assignee/John Doe`, `@status/In Review`)
+
+### Auto-complete Features
+
+The plugin provides intelligent autocomplete with:
+- **Context-aware suggestions** based on your Linear workspace
+- **Color-coded labels** matching Linear's label colors
+- **Hierarchical label display** (groups and child labels)
+- **Default value prioritization** from local config
+- **Fuzzy matching** for faster selection
+
+Type any of the tag prefixes and see instant suggestions:
+- `@team/` → Shows all available teams
+- `@assignee/` → Shows all team members
+- `@status/` → Shows workflow states
+- `@label/` → Shows existing labels with colors
+
+### Local Configuration
+
+Create `.linear.json` files in any folder to customize behavior:
 
 ```json
 {
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
+  "workspace": "my-company",
+  "team": "engineering", 
+  "project": "q4-roadmap",
+  "defaultAssignee": "john.doe@company.com",
+  "defaultPriority": 3,
+  "autoSync": true,
+  "labels": [
+    "frontend",
+    "backend", 
+    "bug-fix"
+  ],
+  "template": "# {{title}}\n\n**Status:** {{status}} | **Priority:** {{priority}}\n**Assignee:** {{assignee}} | **Team:** {{team}}\n\n## Context\n{{description}}\n\n## Acceptance Criteria\n- [ ] \n\n## Notes\n\n\n---\n*Linear: [{{identifier}}]({{url}}) | Last synced: {{lastSync}}*",
+  "syncRules": {
+    "bidirectional": true,
+    "conflictResolution": "manual",
+    "includeComments": true
+  },
+  "display": {
+    "showTooltips": true,
+    "enableQuickEdit": true,
+    "statusIcons": {
+      "Backlog": "📋",
+      "Todo": "📝", 
+      "In Progress": "🔄",
+      "In Review": "👀",
+      "Done": "✅",
+      "Canceled": "❌"
     }
+  }
 }
 ```
 
-## API Documentation
+### Frontmatter Integration
 
-See https://github.com/obsidianmd/obsidian-api
+The plugin automatically manages frontmatter for synced notes:
+
+```yaml
+---
+linear_id: "issue-uuid"
+linear_identifier: "ENG-123"
+linear_status: "In Progress"
+linear_assignee: "John Doe"
+linear_team: "Engineering"
+linear_url: "https://linear.app/issue/ENG-123"
+linear_created: "2024-01-15T10:30:00Z"
+linear_updated: "2024-01-16T14:22:00Z"
+linear_last_synced: "2024-01-16T14:25:00Z"
+linear_priority: 1
+linear_estimate: 5
+linear_labels: ["bug", "frontend", "critical"]
+---
+```
+
+### Custom Templates
+
+Customize note generation with template variables:
+
+```markdown
+# {{title}}
+
+**Status:** {{status}} | **Priority:** {{priority}}
+**Assignee:** {{assignee}} | **Team:** {{team}}
+**Created:** {{created}} | **Updated:** {{updated}}
+
+## Description
+{{description}}
+
+## Acceptance Criteria
+- [ ] 
+
+## Notes
+
+
+---
+*Linear: [{{identifier}}]({{url}}) | Last synced: {{lastSync}}*
+```
+
+Available variables:
+- `{{title}}`, `{{description}}`, `{{status}}`, `{{assignee}}`
+- `{{team}}`, `{{priority}}`, `{{estimate}}`, `{{created}}`
+- `{{updated}}`, `{{identifier}}`, `{{url}}`, `{{lastSync}}`
+
+## ⚙️ Configuration
+
+### Plugin Settings
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **API Key** | Your Linear Personal API Key | - |
+| **Default Team** | Default team for new issues | - |
+| **Sync Folder** | Folder for Linear notes | "Linear Issues" |
+| **Auto Sync** | Sync on startup | false |
+| **Sync Interval** | Minutes between auto-syncs | 15 |
+| **Auto-fill from Expressions** | Parse note content to pre-fill modal | true |
+| **Autocomplete Enabled** | Enable smart autocomplete | true |
+| **Quick Edit Enabled** | Enable quick edit modals | true |
+| **Tooltips Enabled** | Show interactive tooltips | true |
+| **Conflict Resolution** | How to handle conflicts | "manual" |
+
+### Status Mapping
+
+Customize how Linear statuses appear in your notes:
+
+| Linear Status | Default Icon | Customizable |
+|---------------|--------------|--------------|
+| Todo | 📋 | ✅ |
+| In Progress | 🔄 | ✅ |
+| Done | ✅ | ✅ |
+| Canceled | ❌ | ✅ |
+
+Use the "Add Custom Status Mapping" button to add new status → emoji mappings.
+
+### Advanced Settings
+
+- **Comment Mirroring**: Sync Linear comments to notes
+- **Kanban Generation**: Auto-generate kanban boards
+- **Batch Operations**: Enable bulk operations
+- **Secure Storage**: Encrypt stored tokens
+
+## 🔧 Development
+
+### Prerequisites
+
+- Node.js 16+
+- npm or yarn
+- TypeScript 5.0+
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/obsidian-linear-plugin.git
+cd obsidian-linear-plugin
+
+# Install dependencies
+npm install
+
+# Start development
+npm run dev
+```
+
+### Building
+
+```bash
+# Build for production
+npm run build
+
+# Run TypeScript checks
+npm run typecheck
+
+# Lint code
+npm run lint
+
+# Clean build artifacts
+npm run clean
+```
+
+### Project Structure
+
+```
+src/
+├── api/                 # Linear API client with retry logic
+│   └── linear-client.ts
+├── features/           # Plugin features
+│   ├── autocomplete-system.ts    # Smart autocomplete with colors
+│   ├── conflict-resolver.ts      # Intelligent conflict handling
+│   └── local-config-system.ts   # Per-folder configuration
+├── models/             # TypeScript types and interfaces
+│   └── types.ts
+├── parsers/            # Markdown and expression parsing
+│   └── markdown-parser.ts
+├── sync/               # Bidirectional sync management  
+│   └── sync-manager.ts
+├── ui/                 # User interface components
+│   ├── issue-modal.ts            # Enhanced issue creation modal
+│   └── settings-tab.ts          # Plugin settings with custom modals
+├── utils/              # Utilities and helpers
+│   └── frontmatter.ts
+└── main.ts             # Main plugin entry point
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Ways to Contribute
+
+- 🐛 **Bug Reports**: Found an issue? Let us know!
+- 💡 **Feature Requests**: Have an idea? We'd love to hear it!
+- 🔧 **Code Contributions**: Submit PRs for fixes and features
+- 📖 **Documentation**: Help improve our docs
+- 🧪 **Testing**: Help test new features and releases
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- The [Obsidian](https://obsidian.md) team for the amazing platform
+- [Linear](https://linear.app) for the excellent API and GraphQL interface
+- The Obsidian community for inspiration and feedback
+
+## 📞 Support
+
+- **Documentation**: [Plugin Wiki](https://github.com/your-username/obsidian-linear-plugin/wiki)
+- **Issues**: [GitHub Issues](https://github.com/your-username/obsidian-linear-plugin/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-username/obsidian-linear-plugin/discussions)
+- **Discord**: [Obsidian Community](https://discord.gg/obsidianmd)
+
+## 🔄 Recent Updates
+
+### v1.0.0 - Major Release
+- ✅ **Enhanced Autocomplete**: Color-coded suggestions with hierarchical labels
+- ✅ **Auto-fill from Expressions**: Smart field population from note content  
+- ✅ **Dynamic Label Creation**: Automatically create non-existent labels
+- ✅ **Improved Tag Syntax**: Support for spaces in names and new tag types
+- ✅ **Interactive Tooltips**: Hover previews with quick actions
+- ✅ **Custom Status Mapping**: Easy emoji customization with modal interface
+- ✅ **API Retry Logic**: Robust error handling with exponential backoff
+- ✅ **Enhanced UI**: Loading states and better user feedback
+
+## 🗺️ Roadmap
+
+- [ ] **Webhooks**: Real-time updates via Linear webhooks
+- [ ] **Advanced Querying**: Custom GraphQL query builder
+- [ ] **Team Dashboards**: Team-specific views and metrics
+- [ ] **Workflow Automation**: Custom automation rules
+- [ ] **Mobile Support**: Enhanced mobile experience
+- [ ] **Integrations**: Slack, Discord, email notifications
+- [ ] **AI-Powered Suggestions**: Smart issue categorization and assignment
+
+---
+
+<div align="center">
+
+**[⭐ Star us on GitHub](https://github.com/your-username/obsidian-linear-plugin)** | **[📖 Read the Docs](https://github.com/your-username/obsidian-linear-plugin/wiki)** | **[🐛 Report Issues](https://github.com/your-username/obsidian-linear-plugin/issues)**
+
+Made with ❤️ for the Obsidian and Linear communities
+
+</div>
