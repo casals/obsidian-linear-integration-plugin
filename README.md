@@ -38,7 +38,7 @@ A comprehensive Linear integration plugin for Obsidian that provides seamless bi
 
 ### Installation
 
-1. **Download**: Get the latest release from [GitHub Releases](https://github.com/linear-obsidian/obsidian-linear-plugin/releases)
+1. **Download**: Get the latest release from [GitHub Releases](https://github.com/casals/obsidian-linear-integration-plugin/releases)
 2. **Install**: Extract to `.obsidian/plugins/linear-integration/` in your vault
 3. **Enable**: Go to Settings → Community Plugins → Enable "Linear Integration"
 
