@@ -1,5 +1,6 @@
 import { debugLog } from '../utils/debug';
-import { App, TFile, TFolder } from 'obsidian';
+import { getFolderByPath } from '../utils/file-utils';
+import { App, TFile } from 'obsidian';
 import { LinearClient } from '../api/linear-client';
 import { LinearIssue, LinearPluginSettings, NoteFrontmatter, SyncResult } from '../models/types';
 import { parseFrontmatter, updateFrontmatter } from '../utils/frontmatter';
@@ -60,7 +61,8 @@ export class SyncManager {
     }
 
     async findOrCreateNoteForIssue(issue: LinearIssue): Promise<TFile> {
-        const syncFolder = this.app.vault.getAbstractFileByPath(this.settings.syncFolder) as TFolder;
+        //Refactored to avoid type assertion
+        const syncFolder = getFolderByPath(this.app.vault, this.settings.syncFolder);
         
         // Try to find existing note by Linear ID
         for (const file of syncFolder.children) {

@@ -4,7 +4,7 @@ import { LinearClient } from './src/api/linear-client';
 import { SyncManager } from './src/sync/sync-manager';
 import { LinearSettingsTab } from './src/ui/settings-tab';
 import { IssueCreateModal } from './src/ui/issue-modal';
-import { LinearPluginSettings, DEFAULT_SETTINGS, ConflictInfo } from './src/models/types';
+import { LinearPluginSettings, DEFAULT_SETTINGS, ConflictInfo, FileExplorerView } from './src/models/types';
 import { LinearAutocompleteSystem, TooltipManager, QuickEditModal } from './src/features/autocomplete-system';
 import { ConflictResolver, ConflictHistory } from './src/features/conflict-resolver';
 import { LocalConfigManager, KanbanGenerator, AgendaGenerator, CommentMirror, BatchOperationManager } from './src/features/local-config-system';
@@ -432,7 +432,7 @@ export default class LinearPlugin extends Plugin {
         // Get selected files from file explorer
         const fileExplorer = this.app.workspace.getLeavesOfType('file-explorer')[0];
         if (fileExplorer) {
-            const explorerView = fileExplorer.view as any;
+            const explorerView = fileExplorer.view as FileExplorerView;
             if (explorerView.selectedFiles) {
                 explorerView.selectedFiles.forEach((file: TFile) => {
                     if (file.extension === 'md') {

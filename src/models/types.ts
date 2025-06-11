@@ -1,3 +1,4 @@
+import { TFile } from 'obsidian';
 export interface LinearPluginSettings {
     apiKey: string;
     teamId: string;
@@ -194,4 +195,12 @@ export interface AutocompleteItem {
     type: 'user' | 'status' | 'label' | 'project' | 'team';
     icon?: string;
     color?: string;
+}
+
+export interface FrontmatterObject extends Record<string, unknown> {
+    [key: string]: string | number | boolean | string[] | unknown;
+}
+
+export interface FileExplorerView {
+    selectedFiles?: TFile[];
 }

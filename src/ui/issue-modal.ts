@@ -1,4 +1,5 @@
 import { debugLog } from '../utils/debug';
+import { setDefaultOption } from '../utils/dom-utils';
 import { App, Modal, Setting, TFile, Notice } from 'obsidian';
 import { LinearClient } from '../api/linear-client';
 import { LinearIssue, LinearTeam, LinearState, LinearUser, LinearNoteConfig, LinearPluginSettings } from '../models/types';
@@ -272,7 +273,7 @@ export class IssueCreateModal extends Modal {
         if (!this.teamDropdown) return;
         
         // Clear existing options
-        this.teamDropdown.selectEl.innerHTML = '<option value="">Select team...</option>';
+        setDefaultOption(this.teamDropdown.selectEl, 'Select team...');
         
         this.teams.forEach(team => {
             this.teamDropdown.addOption(team.id, `${team.name} (${team.key})`);
@@ -288,7 +289,7 @@ export class IssueCreateModal extends Modal {
         if (!this.stateDropdown) return;
         
         // Clear existing options
-        this.stateDropdown.selectEl.innerHTML = '<option value="">Select status...</option>';
+        setDefaultOption(this.stateDropdown.selectEl, 'Select status...');
         
         this.states.forEach(state => {
             this.stateDropdown.addOption(state.id, state.name);
@@ -304,7 +305,7 @@ export class IssueCreateModal extends Modal {
         if (!this.assigneeDropdown) return;
         
         // Clear existing options
-        this.assigneeDropdown.selectEl.innerHTML = '<option value="">Unassigned</option>';
+        setDefaultOption(this.assigneeDropdown.selectEl, 'Unassigned');
         
         this.users.forEach(user => {
             this.assigneeDropdown.addOption(user.id, user.name);

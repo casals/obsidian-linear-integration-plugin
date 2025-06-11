@@ -1,4 +1,5 @@
 import { debugLog } from '../utils/debug';
+import { getFileByPath, getMdFilesFromFolder } from '../utils/file-utils';
 import { TFile, TFolder, Vault } from 'obsidian';
 import { LinearNoteConfig, LinearIssue, LinearPluginSettings, SyncResult } from '../models/types';
 import { LinearClient } from '../api/linear-client';
@@ -73,7 +74,8 @@ export class LocalConfigManager {
         }
 
         try {
-            const configFile = this.vault.getAbstractFileByPath(configPath) as TFile;
+            //Refactored to avoid type assertion
+            const configFile = getFileByPath(this.vault, configPath);
             if (!configFile) {
                 return {};
             }
@@ -337,9 +339,8 @@ export class BatchOperationManager {
     }
 
     async batchSyncNotes(folder: TFolder): Promise<SyncResult> {
-        const files = folder.children.filter(child => 
-            child instanceof TFile && child.extension === 'md'
-        ) as TFile[];
+        //Refactored to avoid explicit type assertion
+        const files = getMdFilesFromFolder(folder);
 
         const result: SyncResult = {
             created: 0,
@@ -389,4 +390,5 @@ export class BatchOperationManager {
             undefined // status
         );
     }
+
 }

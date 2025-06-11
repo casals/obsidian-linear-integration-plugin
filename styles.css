@@ -1,4 +1,4 @@
-/* Linear Integration Plugin Styles */
+/* Emoji Quick Picks Styles */
 
 .emoji-quick-picks {
     margin: 8px 0;
@@ -26,6 +26,18 @@
 
 .emoji-quick-pick:hover {
     background: var(--background-modifier-hover);
+}
+
+/* Label styling with CSS custom properties */
+.label-item {
+    border-left: 3px solid var(--label-color, #ccc);
+    background-color: var(--label-bg-color, rgba(204, 204, 204, 0.08));
+}
+
+/* Tooltip positioning */
+.tooltip-positioned {
+    position: absolute;
+    z-index: 1000;
 }
 
 /* Base styles for Linear integration elements */

@@ -1,4 +1,5 @@
 import { debugLog } from '../utils/debug';
+import { createColorDot, createIssueTooltip, applyLabelStyling, positionTooltip } from '../utils/dom-utils';
 import { Editor, EditorPosition, EditorSuggest, EditorSuggestContext, EditorSuggestTriggerInfo, TFile, App, Modal, Setting } from 'obsidian';
 import { LinearClient } from '../api/linear-client';
 import { AutocompleteItem, LinearUser, LinearState, LinearTeam, LinearIssue, LinearPluginSettings } from '../models/types';
@@ -119,7 +120,7 @@ export class LinearAutocompleteSystem extends EditorSuggest<AutocompleteItem> {
         const queryLower = query.toLowerCase();
 
         // Get context info from onTrigger             
-        const triggerContext = context as any;
+        const triggerContext = context as EditorSuggestContext;
         const file = triggerContext.file;        
         
         let triggerType = this.currentTriggerType;
@@ -401,8 +402,7 @@ export class LinearAutocompleteSystem extends EditorSuggest<AutocompleteItem> {
 
             // Apply color-based styling for labels
             if (item.type === 'label' && item.color) {
-                div.style.borderLeft = `3px solid ${item.color}`;
-                div.style.backgroundColor = `${item.color}15`; // 15 = ~8% opacity
+                applyLabelStyling(div, item.color);
             }
 
             // Different styling for different label types
@@ -420,7 +420,7 @@ export class LinearAutocompleteSystem extends EditorSuggest<AutocompleteItem> {
         
             if (item.type === 'label' && item.color) {
                 // Create a colored dot instead of emoji
-                iconEl.innerHTML = `<span class="color-dot" style="background-color: ${item.color}"></span>`;
+                createColorDot(iconEl, item.color);
             } else {
                 iconEl.textContent = item.icon || '📝';
             }
@@ -701,33 +701,10 @@ export class TooltipManager {
 
         const tooltip = document.createElement('div');
         tooltip.className = 'linear-tooltip';
-        
-        tooltip.innerHTML = `
-            <div class="tooltip-header">
-                <span class="issue-identifier">${issue.identifier}</span>
-                <span class="issue-status ${issue.state.type}">${issue.state.name}</span>
-            </div>
-            <div class="tooltip-title">${issue.title}</div>
-            <div class="tooltip-meta">
-                <span>Assignee: ${issue.assignee?.name || 'Unassigned'}</span>
-                <span>Team: ${issue.team.name}</span>
-                ${issue.priority ? `<span>Priority: ${issue.priority}</span>` : ''}
-            </div>
-            <div class="tooltip-description">
-                ${issue.description?.substring(0, 150) || 'No description'}${issue.description && issue.description.length > 150 ? '...' : ''}
-            </div>
-            <div class="tooltip-actions">
-                <button class="quick-edit-btn">Quick Edit</button>
-                <button class="open-linear-btn">Open in Linear</button>
-            </div>
-        `;
+        createIssueTooltip(tooltip, issue);        
 
         // Position tooltip
-        const rect = element.getBoundingClientRect();
-        tooltip.style.position = 'absolute';
-        tooltip.style.top = `${rect.bottom + 8}px`;
-        tooltip.style.left = `${rect.left}px`;
-        tooltip.style.zIndex = '1000';
+        positionTooltip(tooltip, element);
 
         document.body.appendChild(tooltip);
         this.activeTooltip = tooltip;

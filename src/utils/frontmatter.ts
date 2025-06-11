@@ -1,4 +1,6 @@
-import { NoteFrontmatter } from '../models/types';
+import { NoteFrontmatter, FrontmatterObject } from '../models/types';
+import { setDynamicProperty } from './type-utils';
+
 
 export function parseFrontmatter(content: string): NoteFrontmatter {
     const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
@@ -33,7 +35,7 @@ export function parseFrontmatter(content: string): NoteFrontmatter {
 
         // If we were building an array, save it
         if (currentKey && currentArray.length > 0) {
-            (frontmatter as any)[currentKey] = currentArray;
+            setDynamicProperty(frontmatter as FrontmatterObject, currentKey, currentArray);
             currentArray = [];
             currentKey = null;
         }
@@ -50,14 +52,14 @@ export function parseFrontmatter(content: string): NoteFrontmatter {
                 currentArray = [];
             } else {
                 // Regular key-value pair
-                (frontmatter as any)[key] = parseValue(value);
+                setDynamicProperty(frontmatter as FrontmatterObject, key, parseValue(value));
             }
         }
     }
 
     // Handle last array if any
     if (currentKey && currentArray.length > 0) {
-        (frontmatter as any)[currentKey] = currentArray;
+        setDynamicProperty(frontmatter as FrontmatterObject, currentKey, currentArray);
     }
 
     return frontmatter;

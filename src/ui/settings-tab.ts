@@ -1,4 +1,5 @@
 import { debugLog } from '../utils/debug';
+import { setDefaultOption } from '../utils/dom-utils';
 import { App, PluginSettingTab, Setting, Notice, Modal } from 'obsidian'; 
 import LinearPlugin from '../../main';
 
@@ -354,7 +355,7 @@ export class LinearSettingsTab extends PluginSettingTab {
             const teams = await this.plugin.linearClient.getTeams();
             
             // Clear existing options except the first one
-            dropdown.selectEl.innerHTML = '<option value="">Select a team...</option>';
+            setDefaultOption(dropdown.selectEl, 'Select a team...');
             
             teams.forEach(team => {
                 dropdown.addOption(team.id, `${team.name} (${team.key})`);
