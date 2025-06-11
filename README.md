@@ -303,19 +303,17 @@ src/
 │   └── settings-tab.ts          # Plugin settings with custom modals
 ├── utils/              # Utilities and helpers
 │   └── frontmatter.ts
+│   └── debug.ts
 └── main.ts             # Main plugin entry point
 ```
 
 ## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ### Ways to Contribute
 
 - 🐛 **Bug Reports**: Found an issue? Let us know!
 - 💡 **Feature Requests**: Have an idea? We'd love to hear it!
 - 🔧 **Code Contributions**: Submit PRs for fixes and features
-- 📖 **Documentation**: Help improve our docs
 - 🧪 **Testing**: Help test new features and releases
 
 ## 📄 License
@@ -326,7 +324,6 @@ This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE)
 
 - The [Obsidian](https://obsidian.md) team for the amazing platform
 - [Linear](https://linear.app) for the excellent API and GraphQL interface
-- The Obsidian community for inspiration and feedback
 
 ## 📞 Support
 
