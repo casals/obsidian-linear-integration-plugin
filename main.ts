@@ -93,7 +93,7 @@ export default class LinearPlugin extends Plugin {
             }
         });
 
-        this.addRibbonIcon('kanban', 'Generate Kanban Board', async () => {
+        this.addRibbonIcon('kanban', 'Generate Kanban board', async () => {
             try {
                 const file = await this.kanbanGenerator.createKanbanNote(this.settings.teamId);
                 await this.app.workspace.openLinkText(file.path, '', false);
@@ -106,7 +106,7 @@ export default class LinearPlugin extends Plugin {
         // Add core commands
         this.addCommand({
             id: 'create-linear-issue',
-            name: 'Create Linear Issue from Note',
+            name: 'Create Linear issue from note',
             checkCallback: (checking: boolean) => {
                 const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
                 if (activeView?.file) {
@@ -121,7 +121,7 @@ export default class LinearPlugin extends Plugin {
 
         this.addCommand({
             id: 'sync-linear-issues',
-            name: 'Sync Linear Issues',
+            name: 'Sync Linear issues',
             callback: async () => {
                 await this.syncManager.syncAll();
             }
@@ -129,7 +129,7 @@ export default class LinearPlugin extends Plugin {
 
         this.addCommand({
             id: 'open-linear-issue',
-            name: 'Open Linear Issue in Browser',
+            name: 'Open Linear issue in browser',
             checkCallback: (checking: boolean) => {
                 const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
                 if (activeView?.file) {
@@ -145,7 +145,7 @@ export default class LinearPlugin extends Plugin {
         // Add enhanced commands
         this.addCommand({
             id: 'quick-edit-issue',
-            name: 'Quick Edit Linear Issue',
+            name: 'Quick edit Linear issue',
             checkCallback: (checking: boolean) => {
                 const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
                 if (activeView?.file && this.settings.quickEditEnabled) {
@@ -160,7 +160,7 @@ export default class LinearPlugin extends Plugin {
 
         this.addCommand({
             id: 'generate-kanban',
-            name: 'Generate Kanban Board',
+            name: 'Generate Kanban board',
             callback: async () => {
                 await this.kanbanGenerator.createKanbanNote(this.settings.teamId);
             }
@@ -168,7 +168,7 @@ export default class LinearPlugin extends Plugin {
 
         this.addCommand({
             id: 'generate-agenda',
-            name: 'Generate Agenda',
+            name: 'Generate agenda',
             callback: async () => {
                 await this.agendaGenerator.createAgendaNote();
             }
@@ -176,7 +176,7 @@ export default class LinearPlugin extends Plugin {
 
         this.addCommand({
             id: 'mirror-comments',
-            name: 'Mirror Linear Comments',
+            name: 'Mirror Linear comments',
             checkCallback: (checking: boolean) => {
                 const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
                 if (activeView?.file && this.settings.inlineCommentMirroring) {
@@ -191,7 +191,7 @@ export default class LinearPlugin extends Plugin {
 
         this.addCommand({
             id: 'batch-create-issues',
-            name: 'Batch Create Issues from Selection',
+            name: 'Batch create issues from selection',
             callback: async () => {
                 await this.batchCreateIssues();
             }
@@ -199,7 +199,7 @@ export default class LinearPlugin extends Plugin {
 
         this.addCommand({
             id: 'insert-issue-reference',
-            name: 'Insert Issue Reference',
+            name: 'Insert issue reference',
             editorCallback: (editor: Editor) => {
                 this.insertIssueReference(editor);
             }

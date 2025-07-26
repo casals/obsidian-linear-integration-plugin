@@ -23,7 +23,7 @@ class StatusMappingModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
 
-        contentEl.createEl('h2', { text: 'Add Custom Status Mapping' });
+        new Setting(contentEl).setName('Add custom status mapping').setHeading();
 
         // Show existing mappings for reference
         if (this.existingStatuses.length > 0) {
@@ -34,7 +34,7 @@ class StatusMappingModal extends Modal {
 
         // Status name input
         new Setting(contentEl)
-            .setName('Status Name')
+            .setName('Status name')
             .setDesc('Enter the Linear status name (case-sensitive)')
             .addText(text => {
                 text.setPlaceholder('e.g., "In Review", "Blocked", "Ready for QA"')
@@ -81,7 +81,7 @@ class StatusMappingModal extends Modal {
         const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
         
         const addButton = buttonContainer.createEl('button', { 
-            text: 'Add Mapping',
+            text: 'Add mapping',
             cls: 'mod-cta'
         });
         addButton.onclick = () => this.submit();
@@ -138,11 +138,11 @@ export class LinearSettingsTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'Linear Integration Settings' });
+        //containerEl.createEl('h2', { text: 'Linear integration' });
 
         // API Key setting
         new Setting(containerEl)
-            .setName('Linear API Key')
+            .setName('Linear API key')
             .setDesc('Your Linear API key. Get it from Linear Settings > API.')
             .addText(text => text
                 .setPlaceholder('lin_api_...')
@@ -157,7 +157,7 @@ export class LinearSettingsTab extends PluginSettingTab {
 
         // Test connection button
         new Setting(containerEl)
-            .setName('Test Connection')
+            .setName('Test connection')
             .setDesc('Test your Linear API connection')
             .addButton(button => button
                 .setButtonText('Test')
@@ -182,7 +182,7 @@ export class LinearSettingsTab extends PluginSettingTab {
 
         // Team selection
         new Setting(containerEl)
-            .setName('Default Team')
+            .setName('Default team')
             .setDesc('Select the Linear team to sync with')
             .addDropdown(dropdown => {
                 dropdown.addOption('', 'Select a team...');
@@ -200,7 +200,7 @@ export class LinearSettingsTab extends PluginSettingTab {
 
         // Sync folder setting
         new Setting(containerEl)
-            .setName('Sync Folder')
+            .setName('Sync folder')
             .setDesc('Folder where Linear issues will be synced')
             .addText(text => text
                 .setPlaceholder('Linear Issues')
@@ -210,11 +210,11 @@ export class LinearSettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        containerEl.createEl('h3', { text: 'Sync Settings' });
+        new Setting(containerEl).setName('Synchronization').setHeading();
 
         // Auto sync toggle
         new Setting(containerEl)
-            .setName('Auto Sync')
+            .setName('Auto sync')
             .setDesc('Automatically sync with Linear on startup')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.autoSync)
@@ -225,7 +225,7 @@ export class LinearSettingsTab extends PluginSettingTab {
 
         // Auto sync interval
         new Setting(containerEl)
-            .setName('Auto Sync Interval')
+            .setName('Auto sync interval')
             .setDesc('Minutes between automatic syncs (0 to disable)')
             .addSlider(slider => slider
                 .setLimits(0, 120, 5)
@@ -238,7 +238,7 @@ export class LinearSettingsTab extends PluginSettingTab {
 
         // Include description toggle
         new Setting(containerEl)
-            .setName('Include Description')
+            .setName('Include description')
             .setDesc('Include Linear issue descriptions in notes')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.includeDescription)
@@ -249,7 +249,7 @@ export class LinearSettingsTab extends PluginSettingTab {
 
         // Include comments toggle
         new Setting(containerEl)
-            .setName('Include Comments')
+            .setName('Include comments')
             .setDesc('Include Linear issue comments in notes')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.includeComments)
@@ -260,7 +260,7 @@ export class LinearSettingsTab extends PluginSettingTab {
 
         // Add auto-fill from Note expressions setting
         new Setting(containerEl)
-            .setName('Auto-fill from Note Expressions')
+            .setName('Auto-fill from note expressions')
             .setDesc('Automatically fill Linear fields in the create modal based on @team/, @assignee/, @priority/ expressions found in the note')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.autoFillFromExpressions)
@@ -269,11 +269,11 @@ export class LinearSettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 }));
 
-        containerEl.createEl('h3', { text: 'Note Template' });
+        new Setting(containerEl).setName('Note template').setHeading();
 
         // Note template setting
         new Setting(containerEl)
-            .setName('Note Template')
+            .setName('Note template')
             .setDesc('Template for generated notes. Available variables: {{title}}, {{status}}, {{assignee}}, {{team}}, {{created}}, {{updated}}, {{description}}, {{url}}, {{lastSync}}')
             .addTextArea(text => {
                 text.setValue(this.plugin.settings.noteTemplate);
@@ -285,11 +285,10 @@ export class LinearSettingsTab extends PluginSettingTab {
                 });
             });
 
-        containerEl.createEl('h3', { text: 'Status Mapping' });
-        containerEl.createEl('p', { 
-            text: 'Map Linear issue states to emoji icons in your notes:',
-            cls: 'setting-item-description'
-        });
+        new Setting(containerEl)
+            .setName('Status mapping')
+            .setDesc('Map Linear issue states to emoji icons in your notes:')
+            .setHeading();
 
         // Status mapping settings
         Object.entries(this.plugin.settings.statusMapping).forEach(([status, icon]) => {
@@ -305,7 +304,7 @@ export class LinearSettingsTab extends PluginSettingTab {
 
         // Add custom status mapping
         new Setting(containerEl)
-            .setName('Add Custom Status Mapping')
+            .setName('Add custom status mapping')
             .setDesc('Add a new status → icon mapping')
             .addButton(button => button
                 .setButtonText('Add')
@@ -320,7 +319,7 @@ export class LinearSettingsTab extends PluginSettingTab {
                 }));
         // Add debug mode 
         new Setting(containerEl)
-            .setName('Debug Mode')
+            .setName('Debug mode')
             .setDesc('Enable debug logging in browser console for troubleshooting')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.debugMode)

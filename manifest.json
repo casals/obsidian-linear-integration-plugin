@@ -3,7 +3,7 @@
     "name": "Linear Integration",
     "version": "1.0.0",
     "minAppVersion": "0.15.0",
-    "description": "Sync Linear (https://linear.app) issues with Obsidian notes. Create, update, and track Linear issues directly from your vault.",
+    "description": "Sync Linear (https://linear.app) issues with notes. Create, update, and track Linear issues directly from your vault.",
     "author": "casals",
     "authorUrl": "https://github.com/casals",
     "fundingUrl": "https://github.com/sponsors/casals",

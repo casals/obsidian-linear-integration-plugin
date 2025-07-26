@@ -64,7 +64,7 @@ export function createIssueTooltip(container: HTMLElement, issue: TooltipIssue):
     
     // Actions
     const actions = container.createEl('div', { cls: 'tooltip-actions' });
-    actions.createEl('button', { cls: 'quick-edit-btn', text: 'Quick Edit' });
+    actions.createEl('button', { cls: 'quick-edit-btn', text: 'Quick edit' });
     actions.createEl('button', { cls: 'open-linear-btn', text: 'Open in Linear' });
 }
 

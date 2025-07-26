@@ -166,7 +166,7 @@ class ConflictResolutionModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
 
-        contentEl.createEl('h2', { text: 'Resolve Sync Conflicts' });
+        contentEl.createEl('h2', { text: 'Resolve sync conflicts' });
         contentEl.createEl('p', { 
             text: 'The following conflicts were detected. Choose how to resolve each one:',
             cls: 'conflict-intro'
@@ -180,17 +180,17 @@ class ConflictResolutionModal extends Modal {
         const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
         
         buttonContainer.createEl('button', { 
-            text: 'Apply All Linear',
+            text: 'Apply all Linear',
             cls: 'conflict-batch-btn'
         }).onclick = () => this.applyBatchResolution('linear');
 
         buttonContainer.createEl('button', { 
-            text: 'Apply All Obsidian',
+            text: 'Apply all Obsidian',
             cls: 'conflict-batch-btn'
         }).onclick = () => this.applyBatchResolution('obsidian');
 
         buttonContainer.createEl('button', { 
-            text: 'Resolve Selected',
+            text: 'Resolve selected',
             cls: 'mod-cta'
         }).onclick = () => this.resolveSelected();
 
@@ -219,14 +219,14 @@ class ConflictResolutionModal extends Modal {
         const comparison = section.createDiv({ cls: 'conflict-comparison' });
         
         const linearDiv = comparison.createDiv({ cls: 'conflict-option' });
-        linearDiv.createEl('h4', { text: 'Linear Value' });
+        linearDiv.createEl('h4', { text: 'Linear value' });
         linearDiv.createEl('div', { 
             text: this.formatValue(conflict.linearValue),
             cls: 'conflict-value linear-value'
         });
 
         const obsidianDiv = comparison.createDiv({ cls: 'conflict-option' });
-        obsidianDiv.createEl('h4', { text: 'Obsidian Value' });
+        obsidianDiv.createEl('h4', { text: 'Obsidian value' });
         obsidianDiv.createEl('div', { 
             text: this.formatValue(conflict.obsidianValue),
             cls: 'conflict-value obsidian-value'
