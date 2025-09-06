@@ -42,7 +42,7 @@ export class IssueCreateModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
 
-        contentEl.createEl('h2', { text: 'Create Linear Issue' });
+        contentEl.createEl('h2', { text: 'Create Linear issue' });
 
         // Show loading indicator
         const loadingEl = contentEl.createDiv({ cls: 'loading-container' });
@@ -67,7 +67,7 @@ export class IssueCreateModal extends Modal {
             
         } catch (error) {
             contentEl.empty();
-            contentEl.createEl('h2', { text: 'Create Linear Issue' });
+            contentEl.createEl('h2', { text: 'Create Linear issue' });
             contentEl.createEl('p', { 
                 text: `❌ Failed to load Linear data: ${(error as Error).message}`,
                 cls: 'error-message'
@@ -175,7 +175,7 @@ export class IssueCreateModal extends Modal {
         const buttonContainer = container.createDiv({ cls: 'modal-button-container' });
         
         const createButton = buttonContainer.createEl('button', { 
-            text: 'Create Issue',
+            text: 'Create issue',
             cls: 'mod-cta'
         });
         createButton.onclick = () => this.createIssue();

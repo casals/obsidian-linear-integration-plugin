@@ -99,7 +99,7 @@ export class SyncManager {
     }
 
     async updateNoteWithIssue(file: TFile, issue: LinearIssue): Promise<boolean> {
-        const content = await this.app.vault.read(file);
+        
         const frontmatter = await this.getFrontmatter(file);
         
         const isNewNote = !frontmatter.linear_id;
@@ -123,8 +123,7 @@ export class SyncManager {
 
         // For existing notes, only update frontmatter to preserve user content
         if (!isNewNote) {
-            const newContent = updateFrontmatter(content, updatedFrontmatter);
-            await this.app.vault.modify(file, newContent);
+            await updateFrontmatter(this.app, file, updatedFrontmatter);
         } else {
             // For new notes, generate full content with frontmatter
             const fullContent = this.addFrontmatterToContent(
@@ -138,8 +137,8 @@ export class SyncManager {
     }
 
     async getFrontmatter(file: TFile): Promise<NoteFrontmatter> {
-        const content = await this.app.vault.read(file);
-        return parseFrontmatter(content);
+        
+        return parseFrontmatter(this.app, file);
     }
 
     async getLinearIdFromNote(file: TFile): Promise<string | null> {

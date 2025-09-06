@@ -620,7 +620,7 @@ export class QuickEditModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
 
-        contentEl.createEl('h2', { text: `Quick Edit: ${this.issue.identifier}` });
+        contentEl.createEl('h2', { text: `Quick edit: ${this.issue.identifier}` });
 
         // Status dropdown
         new Setting(contentEl)
