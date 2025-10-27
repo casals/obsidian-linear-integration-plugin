@@ -119,6 +119,21 @@ export default class LinearPlugin extends Plugin {
             }
         });
 
+		this.addCommand({
+			id: 'create-linear-issue-from-selection',
+			name: 'Create Linear Issue from selected text',
+			editorCallback: async (editor: Editor) => {
+				const selectedText = editor.getSelection();
+				if (!selectedText || !selectedText.trim()) {
+					new Notice('No text selected.');
+					return;
+				}
+				const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+				if (!activeView?.file) return;
+				await this.createIssueFromSelection(editor, activeView.file, selectedText);
+			}
+		});
+
         this.addCommand({
             id: 'sync-linear-issues',
             name: 'Sync Linear issues',
@@ -321,6 +336,44 @@ export default class LinearPlugin extends Plugin {
         );
         modal.open();
     }
+
+	async createIssueFromSelection(editor: Editor, file: TFile, selectedText: string): Promise<void> {
+		const localConfig = await this.localConfigManager.getConfigForNote(file);
+		// Derive a reasonable title from selection
+		const selectionLines = selectedText.split('\n').map(l => l.trim());
+		let derivedTitle = selectionLines.find(l => l.startsWith('# '));
+		if (derivedTitle) {
+			derivedTitle = derivedTitle.replace(/^#\s+/, '').trim();
+		} else {
+			derivedTitle = selectionLines.find(l => l.length > 0) || 'New Issue';
+		}
+		if (derivedTitle.length > 120) derivedTitle = derivedTitle.slice(0, 117) + '...';
+		const cleanedDescription = MarkdownParser.convertToLinearDescription(selectedText).substring(0, 2000);
+
+		const modal = new IssueCreateModal(
+			this.app,
+			this.linearClient,
+			file,
+			localConfig,
+			this.settings,
+			async (issue) => {
+				try {
+					const issueFile = await this.syncManager.findOrCreateNoteForIssue(issue);
+					await this.syncManager.updateNoteWithIssue(issueFile, issue);
+					// Append wikilink to selection
+					const backlink = `\n\n[[${issueFile.basename}]]`;
+					editor.replaceSelection(selectedText + backlink);
+					new Notice(`Created Linear issue: ${issue.identifier} - ${issue.title}`);
+				} catch (error) {
+					new Notice(`Issue created, but note linking failed: ${(error as Error).message}`);
+				}
+			},
+			derivedTitle,
+			cleanedDescription,
+			selectedText
+		);
+		modal.open();
+	}
 
     async openLinearIssue(file: TFile): Promise<void> {
         const issueId = await this.syncManager.getLinearIdFromNote(file);

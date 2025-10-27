@@ -27,16 +27,27 @@ export class IssueCreateModal extends Modal {
     private labelsInput: any = null; 
     private isLoading: boolean = true;
 
-    constructor(
-        app: App,
-        private linearClient: LinearClient,
-        private file: TFile,
-        private localConfig: LinearNoteConfig,
-        private settings: LinearPluginSettings,
-        private onSuccess: (issue: LinearIssue) => void
-    ) {
-        super(app);
-    }
+	// Optional overrides when creating from selection
+	private initialTitle?: string;
+	private initialDescription?: string;
+	private prefillContentOverride?: string;
+
+	constructor(
+		app: App,
+		private linearClient: LinearClient,
+		private file: TFile,
+		private localConfig: LinearNoteConfig,
+		private settings: LinearPluginSettings,
+		private onSuccess: (issue: LinearIssue) => void,
+		initialTitle?: string,
+		initialDescription?: string,
+		prefillContentOverride?: string
+	) {
+		super(app);
+		this.initialTitle = initialTitle;
+		this.initialDescription = initialDescription;
+		this.prefillContentOverride = prefillContentOverride;
+	}
 
     async onOpen() {
         const { contentEl } = this;
@@ -326,31 +337,42 @@ export class IssueCreateModal extends Modal {
         }
     }
 
-    private async prefillFromNote(): Promise<void> {
+	private async prefillFromNote(): Promise<void> {
         try {
-            const content = await this.app.vault.read(this.file);
-            
-            // Extract title from filename or first heading
-            this.title = this.file.basename.replace(/^\d+\s*-\s*/, '');
-            
-            const firstHeading = content.match(/^#\s+(.+)$/m);
-            if (firstHeading) {
-                this.title = firstHeading[1];
-            }
+			// If creating from selection, prefer provided overrides
+			if (this.initialTitle || this.initialDescription || this.prefillContentOverride) {
+				if (this.initialTitle) this.title = this.initialTitle;
+				else this.title = this.file.basename.replace(/^\d+\s*-\s*/, '');
+				
+				if (this.initialDescription) this.description = this.initialDescription.substring(0, 2000);
+				else this.description = '';
+				
+				if (this.settings.autoFillFromExpressions && this.prefillContentOverride) {
+					await this.autoFillFromExpressions(this.prefillContentOverride);
+				}
+				
+				this.applyLocalConfigDefaults();
+				return;
+			}
 
-            // Extract description from content
-            let description = content;
-            description = description.replace(/^---\n[\s\S]*?\n---\n/, '');
-            description = description.replace(/^#\s+.+\n/, '');
-            this.description = description.trim().substring(0, 2000);
-            
-            // Auto-fill based on expressions if enabled
-            if (this.settings.autoFillFromExpressions) {
-                await this.autoFillFromExpressions(content);
-            }
-            
-            // Apply local config defaults (lower priority than expressions)
-            this.applyLocalConfigDefaults();
+			const content = await this.app.vault.read(this.file);
+			// Extract title from filename or first heading
+			this.title = this.file.basename.replace(/^\d+\s*-\s*/, '');
+			const firstHeading = content.match(/^#\s+(.+)$/m);
+			if (firstHeading) {
+				this.title = firstHeading[1];
+			}
+			// Extract description from content
+			let description = content;
+			description = description.replace(/^---\n[\s\S]*?\n---\n/, '');
+			description = description.replace(/^#\s+.+\n/, '');
+			this.description = description.trim().substring(0, 2000);
+			// Auto-fill based on expressions if enabled
+			if (this.settings.autoFillFromExpressions) {
+				await this.autoFillFromExpressions(content);
+			}
+			// Apply local config defaults (lower priority than expressions)
+			this.applyLocalConfigDefaults();
             
         } catch (error) {
             debugLog.error('Failed to prefill from note:', error);
