@@ -72,17 +72,15 @@ export class LinearClient {
     }
 
     async getIssues(teamId?: string, updatedAfter?: string): Promise<LinearIssue[]> {
-        const variables: any = { first: 100 };
-        
         const filters: string[] = [];
         if (teamId) filters.push(`team: { id: { eq: "${teamId}" } }`);
         if (updatedAfter) filters.push(`updatedAt: { gt: "${updatedAfter}" }`);
-        
+
         const filterString = filters.length > 0 ? `filter: { ${filters.join(', ')} }` : '';
 
         const query = `
-            query($first: Int) {
-                issues(first: $first ${filterString ? ', ' + filterString : ''}) {
+            query($first: Int, $after: String) {
+                issues(first: $first, after: $after ${filterString ? ', ' + filterString : ''}) {
                     nodes {
                         id
                         identifier
@@ -116,12 +114,32 @@ export class LinearClient {
                         updatedAt
                         url
                     }
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
                 }
             }
         `;
 
-        const data = await this.makeRequest(query, variables);
-        return data.issues.nodes;
+        const allIssues: LinearIssue[] = [];
+        let after: string | undefined = undefined;
+
+        do {
+            const variables: any = { first: 100, after };
+            const data = await this.makeRequest(query, variables);
+            allIssues.push(...data.issues.nodes);
+
+            const pageInfo = data.issues.pageInfo;
+            if (pageInfo.hasNextPage) {
+                after = pageInfo.endCursor;
+            } else {
+                break;
+            }
+        } while (true);
+
+        debugLog.log(`getIssues: fetched ${allIssues.length} issues total`);
+        return allIssues;
     }
 
     async getIssueById(id: string): Promise<LinearIssue | null> {
