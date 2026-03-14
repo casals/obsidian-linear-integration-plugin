@@ -1,17 +1,21 @@
 import { debugLog } from '../utils/debug';
 import { getFolderByPath } from '../utils/file-utils';
-import { App, TFile } from 'obsidian';
+import { App, TFile, requestUrl } from 'obsidian';
 import { LinearClient } from '../api/linear-client';
 import { LinearIssue, LinearPluginSettings, NoteFrontmatter, SyncResult } from '../models/types';
 import { parseFrontmatter, updateFrontmatter } from '../utils/frontmatter';
 
 export class SyncManager {
+    private attachmentsFolder: string;
+
     constructor(
         private app: App,
         private linearClient: LinearClient,
         private settings: LinearPluginSettings,
         private plugin: any
-    ) {}
+    ) {
+        this.attachmentsFolder = `${this.settings.syncFolder}/attachments`;
+    }
 
     async syncAll(): Promise<SyncResult> {
         const result: SyncResult = {
@@ -37,9 +41,17 @@ export class SyncManager {
             // Process each issue
             for (const issue of issues) {
                 try {
+                    // Download Linear upload images and replace URLs in description
+                    if (issue.description) {
+                        issue.description = await this.downloadAndReplaceImages(
+                            issue.description,
+                            issue.identifier
+                        );
+                    }
+
                     const file = await this.findOrCreateNoteForIssue(issue);
                     const wasCreated = await this.updateNoteWithIssue(file, issue);
-                    
+
                     if (wasCreated) {
                         result.created++;
                     } else {
@@ -165,10 +177,74 @@ export class SyncManager {
         return yamlLines.join('\n') + content;
     }
 
+    async downloadAndReplaceImages(description: string, issueIdentifier: string): Promise<string> {
+        if (!description) return description;
+
+        // Match markdown images and raw URLs pointing to Linear uploads
+        const linearUploadRegex = /(!?\[([^\]]*)\]\()?(https:\/\/uploads\.linear\.app\/[^\s\)]+)\)?/g;
+        let result = description;
+        const matches = [...description.matchAll(linearUploadRegex)];
+
+        for (const match of matches) {
+            const fullMatch = match[0];
+            const url = match[3];
+
+            try {
+                // Extract UUID from URL for a stable filename
+                const urlParts = url.split('/');
+                const uuid = urlParts[urlParts.length - 1].split('?')[0];
+
+                // Check if already downloaded (try common extensions)
+                const existingExts = ['png', 'jpeg', 'jpg', 'gif', 'webp', 'svg'];
+                let alreadyExists = false;
+                for (const e of existingExts) {
+                    const checkPath = `${this.attachmentsFolder}/${issueIdentifier}-${uuid}.${e}`;
+                    if (this.app.vault.getAbstractFileByPath(checkPath)) {
+                        result = result.replace(fullMatch, `![[attachments/${issueIdentifier}-${uuid}.${e}]]`);
+                        alreadyExists = true;
+                        break;
+                    }
+                }
+                if (alreadyExists) continue;
+
+                const response = await requestUrl({
+                    url,
+                    headers: {
+                        'Authorization': this.settings.apiKey,
+                    },
+                });
+
+                const contentType = response.headers['content-type'] || response.headers['Content-Type'] || '';
+                if (!contentType.startsWith('image/')) {
+                    debugLog.warn(`Skipping non-image response for ${url}: ${contentType}`);
+                    continue;
+                }
+
+                const ext = contentType.split('/')[1]?.split(';')[0] || 'png';
+                const filename = `${issueIdentifier}-${uuid}.${ext}`;
+                const filepath = `${this.attachmentsFolder}/${filename}`;
+
+                await this.app.vault.createBinary(filepath, response.arrayBuffer);
+                debugLog.log(`Downloaded image: ${filename}`);
+
+                // Replace URL with Obsidian embed
+                result = result.replace(fullMatch, `![[attachments/${filename}]]`);
+            } catch (error) {
+                debugLog.error(`Failed to download image ${url}:`, error);
+            }
+        }
+
+        return result;
+    }
+
     private async ensureSyncFolder(): Promise<void> {
         const folder = this.app.vault.getAbstractFileByPath(this.settings.syncFolder);
         if (!folder) {
             await this.app.vault.createFolder(this.settings.syncFolder);
+        }
+        const attachments = this.app.vault.getAbstractFileByPath(this.attachmentsFolder);
+        if (!attachments) {
+            await this.app.vault.createFolder(this.attachmentsFolder);
         }
     }
 
