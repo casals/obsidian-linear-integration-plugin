@@ -12,54 +12,54 @@ class DebugLogger {
     setDebugMode(enabled: boolean): void {
         this.debugEnabled = enabled;
         if (enabled) {
-            debugLog.log('🐛 Linear Plugin Debug Mode: ENABLED');
+            console.log('🐛 Linear Plugin Debug Mode: ENABLED');
         }
     }
 
     log(...args: any[]): void {
         if (this.debugEnabled) {
-            debugLog.log('[Linear Plugin]', ...args);
+            console.log('[Linear Plugin]', ...args);
         }
     }
 
     warn(...args: any[]): void {
         if (this.debugEnabled) {
-            debugLog.warn('[Linear Plugin]', ...args);
+            console.warn('[Linear Plugin]', ...args);
         }
     }
 
     error(...args: any[]): void {
         // Always show errors, regardless of debug mode
-        debugLog.error('[Linear Plugin]', ...args);
+        console.error('[Linear Plugin]', ...args);
     }
 
     group(label: string): void {
         if (this.debugEnabled) {
-            debugLog.group(`[Linear Plugin] ${label}`);
+            console.group(`[Linear Plugin] ${label}`);
         }
     }
 
     groupEnd(): void {
         if (this.debugEnabled) {
-            debugLog.groupEnd();
+            console.groupEnd();
         }
     }
 
     table(data: any): void {
         if (this.debugEnabled) {
-            debugLog.table(data);
+            console.table(data);
         }
     }
 
     time(label: string): void {
         if (this.debugEnabled) {
-            debugLog.time(`[Linear Plugin] ${label}`);
+            console.time(`[Linear Plugin] ${label}`);
         }
     }
 
     timeEnd(label: string): void {
         if (this.debugEnabled) {
-            debugLog.timeEnd(`[Linear Plugin] ${label}`);
+            console.timeEnd(`[Linear Plugin] ${label}`);
         }
     }
 }
