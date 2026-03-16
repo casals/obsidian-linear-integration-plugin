@@ -38,7 +38,7 @@ A comprehensive Linear integration plugin for Obsidian that provides seamless bi
 
 ### Installation
 
-1. **Download**: Get the latest release from [GitHub Releases](https://github.com/casals/obsidian-linear-integration-plugin/releases)
+1. **Download**: Get the latest release from [GitHub Releases](https://github.com/byheaven/obsidian-linear-integration-plugin/releases)
 2. **Install**: Extract to `.obsidian/plugins/linear-integration/` in your vault
 3. **Enable**: Go to Settings → Community Plugins → Enable "Linear Integration"
 
@@ -48,8 +48,9 @@ A comprehensive Linear integration plugin for Obsidian that provides seamless bi
 2. **Configure Plugin**: 
    - Open Obsidian Settings → Linear Integration
    - Enter your API key (`lin_api_...`)
-   - Click "Test Connection" to verify
-   - Select your default team
+   - Wait for the workspace settings to auto-refresh, or click "Test Connection"
+   - Set the sync folder and optional workspace defaults
+   - Pick a default team first, then choose a default project from that team's projects
    - Configure auto-fill and autocomplete settings
 
 ### Basic Usage
@@ -81,6 +82,7 @@ Enable "Auto-fill from Note Expressions" in settings to automatically populate i
 
 - **Team**: `@team/Engineering` → Auto-selects Engineering team
 - **Assignee**: `@assignee/john.doe` → Auto-assigns to John Doe  
+- **Project**: `@project/Q4 Roadmap` → Attaches the issue to that project
 - **Priority**: `@priority/1` → Sets to Urgent priority
 - **Status**: `@status/In Progress` → Sets initial status
 - **Labels**: `@label/bug @label/urgent` → Creates and assigns labels
@@ -88,6 +90,8 @@ Enable "Auto-fill from Note Expressions" in settings to automatically populate i
 #### Syncing Existing Issues
 
 Use the sync button in the ribbon or run "Sync Linear Issues" command to pull your Linear issues into Obsidian.
+
+After each top-level sync, Obsidian shows a `Linear Integration` summary notice with created, updated, conflict, and error counts.
 
 ## 📖 Documentation
 
@@ -118,6 +122,34 @@ Type any of the tag prefixes and see instant suggestions:
 - `@assignee/` → Shows all team members
 - `@status/` → Shows workflow states
 - `@label/` → Shows existing labels with colors
+
+### Workspace Defaults
+
+Each configured workspace can define fallback values for issue creation:
+
+- **Default team**: Applied when the note does not explicitly set `@team/` or local config team.
+- **Default project**: Scoped to the selected default team and applied only after the team is known.
+- **Default assignee**: Applied when the note does not explicitly set `@assignee/`.
+
+The create-issue modal resolves fields in this order:
+
+1. Explicit inline expressions such as `@team/`, `@project/`, and `@assignee/`
+2. Local note or folder config from `.linear.json`
+3. Workspace defaults from the settings tab
+
+### Workspace Settings Refresh
+
+The workspace settings tab refreshes teams, users, and projects automatically when:
+
+- you open the Linear Integration settings tab
+- you switch between workspace tabs
+
+The connection indicator next to **Test Connection** shows the current workspace status:
+
+- idle
+- refreshing
+- connected
+- failed
 
 ### Local Configuration
 
@@ -175,8 +207,21 @@ linear_last_synced: "2024-01-16T14:25:00Z"
 linear_priority: 1
 linear_estimate: 5
 linear_labels: ["bug", "frontend", "critical"]
+linear_document_id: "document-uuid"
+linear_document_title: "Spec Note"
+linear_document_updated: "2024-01-16T14:26:00Z"
+linear_document_source_path: "Specs/Spec Note.md"
 ---
 ```
+
+Synced issue notes are rendered into a managed body shell with these sections:
+
+- `# Linear Issue`
+- `# Document`
+- `# New Comment`
+- `# Comments`
+
+The plugin repairs missing managed sections during sync. If `# Document` contains a wikilink such as `[[Spec Note]]`, the linked note becomes the source for the managed Linear issue document. Without a wikilink, the `# Document` section text itself is pushed to the managed issue document.
 
 ### Custom Templates
 
@@ -215,6 +260,8 @@ Available variables:
 |---------|-------------|---------|
 | **API Key** | Your Linear Personal API Key | - |
 | **Default Team** | Default team for new issues | - |
+| **Default Project** | Default project for new issues after the team is known | - |
+| **Default Assignee** | Default assignee for new issues | - |
 | **Sync Folder** | Folder for Linear notes | "Linear Issues" |
 | **Auto Sync** | Sync on startup | false |
 | **Sync Interval** | Minutes between auto-syncs | 15 |
@@ -309,6 +356,17 @@ src/
 
 ## 🤝 Contributing
 
+## E2E Development
+
+Large sync-related changes should be validated against a real Obsidian vault with the local E2E suite:
+
+```bash
+npm run e2e:list
+npm run e2e:smoke
+```
+
+The full workflow, maintenance rules, and case inventory live in `tests/e2e/README.md`.
+
 ### Ways to Contribute
 
 - 🐛 **Bug Reports**: Found an issue? Let us know!
@@ -327,10 +385,17 @@ This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE)
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/casals/obsidian-linear-integration-plugin/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/casals/obsidian-linear-integration-plugin/discussions)
+- **Issues**: [GitHub Issues](https://github.com/byheaven/obsidian-linear-integration-plugin/issues)
+- **Releases**: [GitHub Releases](https://github.com/byheaven/obsidian-linear-integration-plugin/releases)
 
 ## 🔄 Recent Updates
+
+### v1.2.0
+- Added workspace-level default team support for issue creation
+- Scoped default project selection to the selected team in settings and in the create modal
+- Auto-refreshed workspace teams, users, and projects when opening settings or switching workspace tabs
+- Added visible connection status indicators next to the Test Connection button
+- Expanded unit and E2E coverage for default assignee and default project behavior
 
 ### v1.0.0 - Major Release
 - ✅ **Enhanced Autocomplete**: Color-coded suggestions with hierarchical labels
@@ -356,7 +421,7 @@ This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE)
 
 <div align="center">
 
-**[⭐ Star us on GitHub](https://github.com/casals/obsidian-linear-integration-plugin)** | **[🐛 Report Issues](https://github.com/casals/obsidian-linear-integration-plugin/issues)**
+**[⭐ Star us on GitHub](https://github.com/byheaven/obsidian-linear-integration-plugin)** | **[🐛 Report Issues](https://github.com/byheaven/obsidian-linear-integration-plugin/issues)**
 
 Made with ❤️ for the Obsidian and Linear communities
 

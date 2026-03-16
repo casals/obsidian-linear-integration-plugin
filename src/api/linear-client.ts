@@ -1,5 +1,62 @@
 import { debugLog } from '../utils/debug';
-import { LinearIssue, LinearTeam, LinearState, LinearUser } from '../models/types';
+import { LinearDocument, LinearIssue, LinearProject, LinearState, LinearTeam, LinearUser } from '../models/types';
+
+const ISSUE_FIELDS = `
+    id
+    identifier
+    title
+    description
+    state {
+        id
+        name
+        type
+    }
+    assignee {
+        id
+        name
+        email
+    }
+    team {
+        id
+        name
+        key
+    }
+    project {
+        id
+        name
+    }
+    priority
+    estimate
+    dueDate
+    labels {
+        nodes {
+            id
+            name
+            color
+        }
+    }
+    createdAt
+    updatedAt
+    url
+    comments {
+        nodes {
+            id
+            body
+            user {
+                name
+            }
+            createdAt
+        }
+    }
+`;
+
+const DOCUMENT_FIELDS = `
+    id
+    title
+    content
+    url
+    updatedAt
+`;
 
 export class LinearClient {
     private apiKey: string;
@@ -84,37 +141,7 @@ export class LinearClient {
             query($first: Int) {
                 issues(first: $first ${filterString ? ', ' + filterString : ''}) {
                     nodes {
-                        id
-                        identifier
-                        title
-                        description
-                        state {
-                            id
-                            name
-                            type
-                        }
-                        assignee {
-                            id
-                            name
-                            email
-                        }
-                        team {
-                            id
-                            name
-                            key
-                        }
-                        priority
-                        estimate
-                        labels {
-                            nodes {
-                                id
-                                name
-                                color
-                            }
-                        }
-                        createdAt
-                        updatedAt
-                        url
+                        ${ISSUE_FIELDS}
                     }
                 }
             }
@@ -128,47 +155,7 @@ export class LinearClient {
         const query = `
             query($id: String!) {
                 issue(id: $id) {
-                    id
-                    identifier
-                    title
-                    description
-                    state {
-                        id
-                        name
-                        type
-                    }
-                    assignee {
-                        id
-                        name
-                        email
-                    }
-                    team {
-                        id
-                        name
-                        key
-                    }
-                    priority
-                    estimate
-                    labels {
-                        nodes {
-                            id
-                            name
-                            color
-                        }
-                    }
-                    createdAt
-                    updatedAt
-                    url
-                    comments {
-                        nodes {
-                            id
-                            body
-                            user {
-                                name
-                            }
-                            createdAt
-                        }
-                    }
+                    ${ISSUE_FIELDS}
                 }
             }
         `;
@@ -177,65 +164,117 @@ export class LinearClient {
         return data.issue;
     }
 
-    async createIssue(title: string, description: string, teamId: string, assigneeId?: string, stateId?: string, priority?: number, labelNames?: string[]): Promise<LinearIssue> {
+    async getIssueDocuments(issueId: string): Promise<LinearDocument[]> {
+        const query = `
+            query($issueId: String!) {
+                issue(id: $issueId) {
+                    documents {
+                        nodes {
+                            ${DOCUMENT_FIELDS}
+                        }
+                    }
+                }
+            }
+        `;
+
+        const data = await this.makeRequest(query, { issueId });
+        return data.issue?.documents?.nodes ?? [];
+    }
+
+    async createIssueDocument(issueId: string, title: string, content: string): Promise<LinearDocument> {
+        const query = `
+            mutation($input: DocumentCreateInput!) {
+                documentCreate(input: $input) {
+                    success
+                    document {
+                        ${DOCUMENT_FIELDS}
+                    }
+                }
+            }
+        `;
+
+        const data = await this.makeRequest(query, {
+            input: {
+                issueId,
+                title,
+                content
+            }
+        });
+
+        if (!data.documentCreate?.success) {
+            throw new Error('Failed to create Linear document');
+        }
+
+        return data.documentCreate.document;
+    }
+
+    async updateIssueDocument(id: string, issueId: string, title: string, content: string): Promise<LinearDocument> {
+        const query = `
+            mutation($id: String!, $input: DocumentUpdateInput!) {
+                documentUpdate(id: $id, input: $input) {
+                    success
+                    document {
+                        ${DOCUMENT_FIELDS}
+                    }
+                }
+            }
+        `;
+
+        const data = await this.makeRequest(query, {
+            id,
+            input: {
+                issueId,
+                title,
+                content
+            }
+        });
+
+        if (!data.documentUpdate?.success) {
+            throw new Error('Failed to update Linear document');
+        }
+
+        return data.documentUpdate.document;
+    }
+
+    async createIssue(input: {
+        title: string;
+        description: string;
+        teamId: string;
+        assigneeId?: string;
+        stateId?: string;
+        priority?: number;
+        labelNames?: string[];
+        projectId?: string;
+    }): Promise<LinearIssue> {
         // Convert label names to label IDs if provided
         let labelIds: string[] = [];
-        if (labelNames && labelNames.length > 0) {
-            labelIds = await this.convertLabelNamesToIds(labelNames, teamId);
+        if (input.labelNames && input.labelNames.length > 0) {
+            labelIds = await this.convertLabelNamesToIds(input.labelNames, input.teamId);
         }
         const query = `
             mutation($input: IssueCreateInput!) {
                 issueCreate(input: $input) {
                     success
                     issue {
-                        id
-                        identifier
-                        title
-                        description
-                        state {
-                            id
-                            name
-                            type
-                        }
-                        assignee {
-                            id
-                            name
-                            email
-                        }
-                        team {
-                            id
-                            name
-                            key
-                        }
-                        priority
-                        estimate
-                        labels {
-                            nodes {
-                                id
-                                name
-                                color
-                            }
-                        }
-                        createdAt
-                        updatedAt
-                        url
+                        ${ISSUE_FIELDS}
                     }
                 }
             }
         `;
 
-        const input: any = {
-            title,
-            description,
-            teamId,
+        const mutationInput: any = {
+            title: input.title,
+            description: input.description,
+            teamId: input.teamId,
         };
 
-        if (assigneeId) input.assigneeId = assigneeId;
-        if (stateId) input.stateId = stateId;
-        if (priority !== undefined) input.priority = priority;
-        if (labelIds.length > 0) input.labelIds = labelIds;
+        if (input.assigneeId) mutationInput.assigneeId = input.assigneeId;
+        if (input.stateId) mutationInput.stateId = input.stateId;
+        if (input.priority !== undefined) mutationInput.priority = input.priority;
+        if (labelIds.length > 0) mutationInput.labelIds = labelIds;
+        if (input.projectId) mutationInput.projectId = input.projectId;
 
-        const data = await this.makeRequest(query, { input });
+        const data = await this.makeRequest(query, { input: mutationInput });
         
         if (!data.issueCreate.success) {
             throw new Error('Failed to create Linear issue');
@@ -331,49 +370,43 @@ export class LinearClient {
         return colors[Math.floor(Math.random() * colors.length)];
     }
 
-    async updateIssue(id: string, updates: Partial<{ title: string; description: string; stateId: string; assigneeId: string }>): Promise<LinearIssue> {
+    async updateIssue(
+        id: string,
+        updates: Partial<{
+            title: string;
+            description: string;
+            stateId: string;
+            assigneeId: string | null;
+            projectId: string | null;
+            priority: number;
+            labelNames: string[];
+            teamId: string;
+        }>
+    ): Promise<LinearIssue> {
+        const input: Record<string, unknown> = {};
+        if (updates.title !== undefined) input.title = updates.title;
+        if (updates.description !== undefined) input.description = updates.description;
+        if (updates.stateId !== undefined) input.stateId = updates.stateId;
+        if (updates.assigneeId !== undefined) input.assigneeId = updates.assigneeId;
+        if (updates.projectId !== undefined) input.projectId = updates.projectId;
+        if (updates.priority !== undefined) input.priority = updates.priority;
+        if (updates.labelNames !== undefined) {
+            const labelIds = await this.convertLabelNamesToIds(updates.labelNames, updates.teamId);
+            input.labelIds = labelIds;
+        }
+
         const query = `
             mutation($id: String!, $input: IssueUpdateInput!) {
                 issueUpdate(id: $id, input: $input) {
                     success
                     issue {
-                        id
-                        identifier
-                        title
-                        description
-                        state {
-                            id
-                            name
-                            type
-                        }
-                        assignee {
-                            id
-                            name
-                            email
-                        }
-                        team {
-                            id
-                            name
-                            key
-                        }
-                        priority
-                        estimate
-                        labels {
-                            nodes {
-                                id
-                                name
-                                color
-                            }
-                        }
-                        createdAt
-                        updatedAt
-                        url
+                        ${ISSUE_FIELDS}
                     }
                 }
             }
         `;
 
-        const data = await this.makeRequest(query, { id, input: updates });
+        const data = await this.makeRequest(query, { id, input });
         
         if (!data.issueUpdate.success) {
             throw new Error('Failed to update Linear issue');
@@ -424,38 +457,7 @@ export class LinearClient {
             query($filter: IssueFilter) {
                 issues(filter: $filter) {
                     nodes {
-                        id
-                        identifier
-                        title
-                        description
-                        state {
-                            id
-                            name
-                            type
-                        }
-                        assignee {
-                            id
-                            name
-                            email
-                        }
-                        team {
-                            id
-                            name
-                            key
-                        }
-                        priority
-                        estimate
-                        dueDate
-                        labels {
-                            nodes {
-                                id
-                                name
-                                color
-                            }
-                        }
-                        createdAt
-                        updatedAt
-                        url
+                        ${ISSUE_FIELDS}
                     }
                 }
             }
@@ -493,38 +495,7 @@ export class LinearClient {
             query($first: Int) {
                 issues(first: $first ${filterString ? ', ' + filterString : ''}) {
                     nodes {
-                        id
-                        identifier
-                        title
-                        description
-                        state {
-                            id
-                            name
-                            type
-                        }
-                        assignee {
-                            id
-                            name
-                            email
-                        }
-                        team {
-                            id
-                            name
-                            key
-                        }
-                        priority
-                        estimate
-                        dueDate
-                        labels {
-                            nodes {
-                                id
-                                name
-                                color
-                            }
-                        }
-                        createdAt
-                        updatedAt
-                        url
+                        ${ISSUE_FIELDS}
                     }
                 }
             }
@@ -584,101 +555,39 @@ export class LinearClient {
         return labels;
         }
 
-    async getProjects(teamId?: string): Promise<Array<{ id: string; name: string; description?: string }>> {
-        const teamFilter = teamId ? `team: { id: { eq: "${teamId}" } }` : '';
-        
+    async getProjects(teamId?: string): Promise<LinearProject[]> {
         const query = `
             query {
-                projects(filter: { ${teamFilter} }) {
+                projects {
                     nodes {
                         id
                         name
                         description
-                        state
+                        teams {
+                            nodes {
+                                id
+                            }
+                        }
                     }
                 }
             }
         `;
 
         const data = await this.makeRequest(query);
-        return data.projects.nodes;
-    }
+        const projects = (data.projects.nodes as Array<LinearProject & { teams?: { nodes?: Array<{ id: string }> } }>).map(project => ({
+            id: project.id,
+            name: project.name,
+            description: project.description,
+            teamIds: project.teams?.nodes?.map(team => team.id) ?? []
+        }));
 
-    async createIssueWithLabels(
-        title: string, 
-        description: string, 
-        teamId: string, 
-        options: {
-            assigneeId?: string;
-            stateId?: string;
-            priority?: number;
-            labelIds?: string[];
-            projectId?: string;
-            dueDate?: string;
-        } = {}
-    ): Promise<LinearIssue> {
-        const query = `
-            mutation($input: IssueCreateInput!) {
-                issueCreate(input: $input) {
-                    success
-                    issue {
-                        id
-                        identifier
-                        title
-                        description
-                        state {
-                            id
-                            name
-                            type
-                        }
-                        assignee {
-                            id
-                            name
-                            email
-                        }
-                        team {
-                            id
-                            name
-                            key
-                        }
-                        priority
-                        estimate
-                        dueDate
-                        labels {
-                            nodes {
-                                id
-                                name
-                                color
-                            }
-                        }
-                        createdAt
-                        updatedAt
-                        url
-                    }
-                }
-            }
-        `;
-
-        const input: any = {
-            title,
-            description,
-            teamId,
-        };
-
-        if (options.assigneeId) input.assigneeId = options.assigneeId;
-        if (options.stateId) input.stateId = options.stateId;
-        if (options.priority) input.priority = options.priority;
-        if (options.labelIds && options.labelIds.length > 0) input.labelIds = options.labelIds;
-        if (options.projectId) input.projectId = options.projectId;
-        if (options.dueDate) input.dueDate = options.dueDate;
-
-        const data = await this.makeRequest(query, { input });
-        
-        if (!data.issueCreate.success) {
-            throw new Error('Failed to create Linear issue');
+        if (!teamId) {
+            return projects;
         }
 
-        return data.issueCreate.issue;
+        return projects.filter(project =>
+            project.teamIds?.includes(teamId)
+        );
     }
 
     async addCommentToIssue(issueId: string, body: string): Promise<void> {

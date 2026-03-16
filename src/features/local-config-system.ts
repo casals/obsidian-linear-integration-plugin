@@ -1,6 +1,6 @@
 import { debugLog } from '../utils/debug';
-import { getFileByPath, getMdFilesFromFolder } from '../utils/file-utils';
-import { TFile, TFolder, Vault, App } from 'obsidian';
+import { getFileByPath } from '../utils/file-utils';
+import { TFile, TFolder, Vault, App, Notice } from 'obsidian';
 import { LinearNoteConfig, LinearIssue, LinearPluginSettings, SyncResult } from '../models/types';
 import { LinearClient } from '../api/linear-client';
 import { SyncManager } from '../sync/sync-manager';
@@ -121,11 +121,16 @@ export class LocalConfigManager {
 export class KanbanGenerator {
     constructor(
         private vault: Vault,
-        private linearClient: LinearClient,
-        private settings: LinearPluginSettings
-    ) {}
+        private linearClient: LinearClient | null,
+        private settings: LinearPluginSettings,
+        plugin: any  // reserved for future use
+    ) { void plugin; void this.settings; }
 
     async generateKanbanBoard(teamId?: string): Promise<string> {
+        if (!this.linearClient) {
+            new Notice('No workspace configured.');
+            return '';
+        }
         const issues = await this.linearClient.getIssues(teamId);
         
         // Group issues by status
@@ -164,12 +169,16 @@ export class KanbanGenerator {
         return kanban;
     }
 
-    async createKanbanNote(teamId?: string): Promise<TFile> {
+    async createKanbanNote(syncFolder: string, teamId?: string): Promise<TFile> {
         const content = await this.generateKanbanBoard(teamId);
-        const timestamp = new Date().toISOString().slice(0, 10);
-        const filename = `Linear Kanban ${timestamp}.md`;
-        const filepath = `${this.settings.syncFolder}/${filename}`;
-        
+        if (!content) throw new Error('No workspace configured; kanban not generated.');
+        const filename = `Linear Kanban - ${new Date().toLocaleDateString()}.md`;
+        const filepath = `${syncFolder}/${filename}`;
+        const existingFile = this.vault.getAbstractFileByPath(filepath);
+        if (existingFile instanceof TFile) {
+            await this.vault.modify(existingFile, content);
+            return existingFile;
+        }
         return await this.vault.create(filepath, content);
     }
 
@@ -182,11 +191,16 @@ export class KanbanGenerator {
 export class AgendaGenerator {
     constructor(
         private vault: Vault,
-        private linearClient: LinearClient,
-        private settings: LinearPluginSettings
-    ) {}
+        private linearClient: LinearClient | null,
+        private settings: LinearPluginSettings,
+        plugin: any  // reserved for future use
+    ) { void plugin; }
 
     async generateAgenda(userId?: string, days: number = 7): Promise<string> {
+        if (!this.linearClient) {
+            new Notice('No workspace configured.');
+            return '';
+        }
         const issues = await this.linearClient.getIssues();
         
         // Filter issues for user and time range
@@ -250,12 +264,16 @@ export class AgendaGenerator {
         return agenda;
     }
 
-    async createAgendaNote(userId?: string, days: number = 7): Promise<TFile> {
-        const content = await this.generateAgenda(userId, days);
-        const timestamp = new Date().toISOString().slice(0, 10);
-        const filename = `Linear Agenda ${timestamp}.md`;
-        const filepath = `${this.settings.syncFolder}/${filename}`;
-        
+    async createAgendaNote(syncFolder: string): Promise<TFile> {
+        const content = await this.generateAgenda();
+        if (!content) throw new Error('No workspace configured; agenda not generated.');
+        const filename = `Linear Agenda - ${new Date().toLocaleDateString()}.md`;
+        const filepath = `${syncFolder}/${filename}`;
+        const existingFile = this.vault.getAbstractFileByPath(filepath);
+        if (existingFile instanceof TFile) {
+            await this.vault.modify(existingFile, content);
+            return existingFile;
+        }
         return await this.vault.create(filepath, content);
     }
 
@@ -268,10 +286,11 @@ export class AgendaGenerator {
 export class CommentMirror {
     constructor(
         private vault: Vault,
-        private linearClient: LinearClient
+        private linearClient: LinearClient | null
     ) {}
 
     async mirrorCommentsToNote(file: TFile, issueId: string): Promise<void> {
+        if (!this.linearClient) { new Notice('No workspace configured.'); return; }
         const issue = await this.linearClient.getIssueById(issueId);
         if (!issue || !issue.comments) return;
 
@@ -279,7 +298,9 @@ export class CommentMirror {
         const commentsSection = this.generateCommentsSection(issue.comments.nodes);
         
         // Find existing comments section or add new one
-        const commentsStart = content.indexOf('## Comments');
+        const commentsStart = content.indexOf('# Comments') >= 0
+            ? content.indexOf('# Comments')
+            : content.indexOf('## Comments');
         
         if (commentsStart >= 0) {
             // Replace existing comments section
@@ -298,10 +319,10 @@ export class CommentMirror {
 
     private generateCommentsSection(comments: any[]): string {
         if (comments.length === 0) {
-            return '## Comments\n\n*No comments yet.*';
+            return '# Comments\n\n*No comments yet.*';
         }
 
-        let section = '## Comments\n\n';
+        let section = '# Comments\n\n';
         
         comments.forEach(comment => {
             const author = comment.user.name;
@@ -318,13 +339,16 @@ export class CommentMirror {
 
 export class BatchOperationManager {
     constructor(
-        private app: App, 
-        private vault: Vault,
-        private linearClient: LinearClient,
+        private app: App,
+        private linearClient: LinearClient | null,
         private syncManager: SyncManager
     ) {}
 
     async batchCreateIssues(files: TFile[]): Promise<{ successes: number; failures: string[] }> {
+        if (!this.linearClient) {
+            new Notice('No workspace configured.');
+            return { successes: 0, failures: [] };
+        }
         const results = { successes: 0, failures: [] as string[] };
         
         for (const file of files) {
@@ -339,42 +363,21 @@ export class BatchOperationManager {
         return results;
     }
 
-    async batchSyncNotes(folder: TFolder): Promise<SyncResult> {
-        //Refactored to avoid explicit type assertion
-        const files = getMdFilesFromFolder(folder);
-
-        const result: SyncResult = {
-            created: 0,
-            updated: 0,
-            errors: [],
-            conflicts: []
-        };
-
-        for (const file of files) {
-            try {
-                const fileResult = await this.syncManager.syncAll();
-                result.created += fileResult.created;
-                result.updated += fileResult.updated;
-                result.errors.push(...fileResult.errors);
-                result.conflicts.push(...fileResult.conflicts);
-            } catch (error) {
-                result.errors.push(`${file.name}: ${(error as Error).message}`);
-            }
-        }
-
-        return result;
+    async batchSyncNotes(_folder: TFolder): Promise<SyncResult> {
+        return await this.syncManager.syncAll();
     }
 
     async batchUpdateStatus(issueIds: string[], newStatusId: string): Promise<void> {
-        const updatePromises = issueIds.map(id => 
-            this.linearClient.updateIssue(id, { stateId: newStatusId })
+        if (!this.linearClient) return;
+        const updatePromises = issueIds.map(id =>
+            this.linearClient!.updateIssue(id, { stateId: newStatusId })
         );
-
         await Promise.allSettled(updatePromises);
     }
 
     private async createIssueFromFile(file: TFile): Promise<LinearIssue> {
-        const content = await this.vault.read(file);
+        if (!this.linearClient) throw new Error('No workspace configured.');
+        const content = await this.app.vault.read(file);
         const config = MarkdownParser.parseNoteConfig(this.app, file, content);
         const title = MarkdownParser.extractTitle(content);
         const description = MarkdownParser.convertToLinearDescription(content);
@@ -383,13 +386,13 @@ export class BatchOperationManager {
             throw new Error('No team specified in note config');
         }
 
-        return await this.linearClient.createIssue(
+        return await this.linearClient.createIssue({
             title,
             description,
-            config.team,
-            config.assignee,
-            undefined // status
-        );
+            teamId: config.team,
+            assigneeId: config.assignee,
+            projectId: config.project
+        });
     }
 
 }

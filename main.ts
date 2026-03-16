@@ -2,9 +2,10 @@ import { debugLog } from './src/utils/debug';
 import { Plugin, TFile, Notice, MarkdownView, Editor } from 'obsidian';
 import { LinearClient } from './src/api/linear-client';
 import { SyncManager } from './src/sync/sync-manager';
+import { formatSyncSummaryNoticeText, SYNC_NOTICE_DURATION } from './src/sync/sync-summary';
 import { LinearSettingsTab } from './src/ui/settings-tab';
 import { IssueCreateModal } from './src/ui/issue-modal';
-import { LinearPluginSettings, DEFAULT_SETTINGS, ConflictInfo, FileExplorerView } from './src/models/types';
+import { LinearPluginSettings, LinearWorkspace, DEFAULT_SETTINGS, ConflictInfo, FileExplorerView, SyncResult } from './src/models/types';
 import { LinearAutocompleteSystem, TooltipManager, QuickEditModal } from './src/features/autocomplete-system';
 import { ConflictResolver, ConflictHistory } from './src/features/conflict-resolver';
 import { LocalConfigManager, KanbanGenerator, AgendaGenerator, CommentMirror, BatchOperationManager } from './src/features/local-config-system';
@@ -12,7 +13,8 @@ import { MarkdownParser } from './src/parsers/markdown-parser';
 
 export default class LinearPlugin extends Plugin {
     settings!: LinearPluginSettings;
-    linearClient!: LinearClient;
+    private _clientCache = new Map<string, LinearClient>();
+    lastSyncSummaryNotice: string | null = null;
     syncManager!: SyncManager;
     autocompleteSystem?: LinearAutocompleteSystem;
     conflictResolver!: ConflictResolver;
@@ -24,78 +26,70 @@ export default class LinearPlugin extends Plugin {
     batchOperationManager!: BatchOperationManager;
     tooltipManager!: TooltipManager;
 
-    async onload() {        
-        
+    getLastSyncSummaryNotice(): string | null {
+        return this.lastSyncSummaryNotice;
+    }
+
+    getDefaultWorkspace(): LinearWorkspace | null {
+        const id = this.settings.defaultWorkspaceId;
+        if (id) {
+            const explicit = this.settings.workspaces.find(w => w.id === id && w.enabled);
+            if (explicit) return explicit;
+            // Configured default is disabled — fall back to any enabled workspace
+        }
+        return this.settings.workspaces.find(w => w.enabled) ?? null;
+    }
+
+    getDefaultClient(): LinearClient | null {
+        const workspace = this.getDefaultWorkspace();
+        if (!workspace) return null;
+        if (!this._clientCache.has(workspace.id)) {
+            this._clientCache.set(workspace.id, new LinearClient(workspace.apiKey));
+        }
+        return this._clientCache.get(workspace.id)!;
+    }
+
+    async onload() {
+
         await this.loadSettings();
 
         // Initialize debug mode first
         debugLog.setDebugMode(this.settings.debugMode);
         debugLog.log('Loading Linear Plugin');
 
-        // Check API key loading
-        debugLog.log('=== LINEAR PLUGIN DEBUG ===');
-        debugLog.log('API Key present:', !!this.settings.apiKey);
-        debugLog.log('API Key length:', this.settings.apiKey?.length || 0);
-        debugLog.log('API Key starts with lin_api:', this.settings.apiKey?.startsWith('lin_api_') || false);
-        debugLog.log('Autocomplete enabled:', this.settings.autocompleteEnabled);
-        
-        // Initialize core components
-        this.linearClient = new LinearClient(this.settings.apiKey);
-
-        // DEBUG: Test LinearClient immediately
-        try {
-            debugLog.log('Testing LinearClient connection...');
-            const testResult = await this.linearClient.testConnection();
-            debugLog.log('LinearClient test result:', testResult);
-        } catch (error) {
-            debugLog.error('LinearClient test failed:', error);
-        }
-
-
-        //this.syncManager = new SyncManager(this.app, this.linearClient, this.settings);
-        this.syncManager = new SyncManager(this.app, this.linearClient, this.settings, this);
+        this.syncManager = new SyncManager(this.app, this.settings, this);
         this.conflictResolver = new ConflictResolver(this.app, this.settings);
         this.conflictHistory = new ConflictHistory();
         this.localConfigManager = new LocalConfigManager(this.app.vault);
         this.tooltipManager = TooltipManager.getInstance();
 
         // Initialize feature components
-        this.kanbanGenerator = new KanbanGenerator(this.app.vault, this.linearClient, this.settings);
-        this.agendaGenerator = new AgendaGenerator(this.app.vault, this.linearClient, this.settings);
-        this.commentMirror = new CommentMirror(this.app.vault, this.linearClient);
-        this.batchOperationManager = new BatchOperationManager(this.app, this.app.vault, this.linearClient, this.syncManager);
+        this.kanbanGenerator = new KanbanGenerator(this.app.vault, this.getDefaultClient(), this.settings, this);
+        this.agendaGenerator = new AgendaGenerator(this.app.vault, this.getDefaultClient(), this.settings, this);
+        this.commentMirror = new CommentMirror(this.app.vault, this.getDefaultClient());
+        this.batchOperationManager = new BatchOperationManager(this.app, this.getDefaultClient(), this.syncManager);
 
-        // Initialize autocomplete if enabled        
+        // Initialize autocomplete if enabled
         if (this.settings.autocompleteEnabled) {
-            // Delay autocomplete initialization to ensure everything is ready
             setTimeout(() => {
-                debugLog.log('Initializing autocomplete system...');
-                this.autocompleteSystem = new LinearAutocompleteSystem(
-                    this.app, 
-                    this.linearClient, 
-                    this.settings, 
-                    this.localConfigManager
-                );
-                this.registerEditorSuggest(this.autocompleteSystem);
-                debugLog.log('Autocomplete system initialized');
-            }, 1000); // 1 second delay
+                const client = this.getDefaultClient();
+                if (client) {
+                    this.autocompleteSystem = new LinearAutocompleteSystem(
+                        this.app, client, this.settings, this.localConfigManager
+                    );
+                    this.registerEditorSuggest(this.autocompleteSystem);
+                }
+            }, 1000);
         }
 
         // Add ribbon icons
         this.addRibbonIcon('sync', 'Sync with Linear', async () => {
-            new Notice('Syncing with Linear...');
-            try {
-                await this.syncManager.syncAll();
-                new Notice('Linear sync completed');
-            } catch (error) {
-                new Notice(`Sync failed: ${(error as Error).message}`);
-                debugLog.error('Linear sync error:', error);
-            }
+            await this.runTopLevelSync({ startNotice: 'Syncing with Linear...' });
         });
 
         this.addRibbonIcon('kanban', 'Generate Kanban board', async () => {
             try {
-                const file = await this.kanbanGenerator.createKanbanNote(this.settings.teamId);
+                const file = await this.kanbanGenerator.createKanbanNote(this.getDefaultWorkspace()?.syncFolder ?? '', undefined);
                 await this.app.workspace.openLinkText(file.path, '', false);
                 new Notice('Kanban board generated');
             } catch (error) {
@@ -123,7 +117,7 @@ export default class LinearPlugin extends Plugin {
             id: 'sync-linear-issues',
             name: 'Sync Linear issues',
             callback: async () => {
-                await this.syncManager.syncAll();
+                await this.runTopLevelSync();
             }
         });
 
@@ -162,7 +156,7 @@ export default class LinearPlugin extends Plugin {
             id: 'generate-kanban',
             name: 'Generate Kanban board',
             callback: async () => {
-                await this.kanbanGenerator.createKanbanNote(this.settings.teamId);
+                await this.kanbanGenerator.createKanbanNote(this.getDefaultWorkspace()?.syncFolder ?? '', undefined);
             }
         });
 
@@ -170,7 +164,7 @@ export default class LinearPlugin extends Plugin {
             id: 'generate-agenda',
             name: 'Generate agenda',
             callback: async () => {
-                await this.agendaGenerator.createAgendaNote();
+                await this.agendaGenerator.createAgendaNote(this.getDefaultWorkspace()?.syncFolder ?? '');
             }
         });
 
@@ -213,14 +207,18 @@ export default class LinearPlugin extends Plugin {
 
         // Auto-sync on startup if enabled
         if (this.settings.autoSync) {
-            setTimeout(() => this.syncManager.syncAll(), 2000);
+            setTimeout(() => {
+                void this.runTopLevelSync();
+            }, 2000);
         }
 
         // Set up periodic sync if enabled
         if (this.settings.autoSyncInterval > 0) {
             this.registerInterval(
                 window.setInterval(
-                    () => this.syncManager.syncAll(),
+                    () => {
+                        void this.runTopLevelSync();
+                    },
                     this.settings.autoSyncInterval * 60000
                 )
             );
@@ -287,7 +285,7 @@ export default class LinearPlugin extends Plugin {
 
     private async showIssueTooltip(element: HTMLElement, issueId: string): Promise<void> {
         try {
-            const issue = await this.linearClient.getIssueById(issueId);
+            const issue = await this.getDefaultClient()?.getIssueById(issueId);
             if (issue) {
                 this.tooltipManager.showIssueTooltip(element, issue);
             }
@@ -297,25 +295,35 @@ export default class LinearPlugin extends Plugin {
     }
 
     async createIssueFromNote(file: TFile): Promise<void> {
-        // Get local config for this note
+        const client = this.getDefaultClient();
+        if (!client) {
+            new Notice('No workspace configured. Add a workspace in Settings → Linear Integration.');
+            return;
+        }
         const localConfig = await this.localConfigManager.getConfigForNote(file);
-        
         const modal = new IssueCreateModal(
             this.app,
-            this.linearClient,
+            client,
             file,
             localConfig,
             this.settings,
-            async (issue) => {
-                // Update note with Linear issue metadata
-                await this.syncManager.updateNoteWithIssue(file, issue);
-                
-                // Embed issue reference if enabled
-                const content = await this.app.vault.read(file);
-                const reference = MarkdownParser.generateIssueReference(issue.id, issue.identifier);
-                const updatedContent = MarkdownParser.embedIssueReference(content, reference, 'bottom');
-                await this.app.vault.modify(file, updatedContent);
-                
+            this,
+            async (issue, workspaceId) => {
+                const workspace = this.settings.workspaces.find(w => w.id === workspaceId) ?? this.getDefaultWorkspace();
+                if (!workspace) {
+                    throw new Error('No workspace configured.');
+                }
+
+                try {
+                    await this.syncManager.updateNoteWithIssue(file, issue, workspace, {
+                        documentText: '',
+                        draftText: '',
+                        syncLabel: new Date().toLocaleString()
+                    });
+                } catch (error) {
+                    debugLog.error('Failed to update note after creating a Linear issue:', error);
+                    throw error;
+                }
                 new Notice(`Created Linear issue: ${issue.identifier} - ${issue.title}`);
             }
         );
@@ -339,8 +347,14 @@ export default class LinearPlugin extends Plugin {
             return;
         }
 
+        const linearClient = this.getDefaultClient();
+        if (!linearClient) {
+            new Notice('No workspace configured.');
+            return;
+        }
+
         try {
-            const issue = await this.linearClient.getIssueById(issueId);
+            const issue = await linearClient.getIssueById(issueId);
             if (!issue) {
                 new Notice('Issue not found in Linear');
                 return;
@@ -350,7 +364,7 @@ export default class LinearPlugin extends Plugin {
                 this.app,
                 issue,
                 async (updates) => {
-                    await this.linearClient.updateIssue(issueId, updates);
+                    await linearClient.updateIssue(issueId, updates);
                     await this.syncManager.syncAll();
                     new Notice('Issue updated successfully');
                 }
@@ -401,14 +415,14 @@ export default class LinearPlugin extends Plugin {
     }
 
     async insertIssueReference(editor: Editor): Promise<void> {
-        // This would open a modal to search and select an issue
-        // For now, we'll implement a simple version
         const issueIdentifier = await this.promptForIssueIdentifier();
         if (issueIdentifier) {
             try {
-                const issues = await this.linearClient.getIssues();
+                const linearClient = this.getDefaultClient();
+                if (!linearClient) return;
+                const issues = await linearClient.getIssues();
                 const issue = issues.find(i => i.identifier === issueIdentifier);
-                
+
                 if (issue) {
                     const reference = MarkdownParser.generateIssueReference(issue.id, issue.identifier);
                     editor.replaceSelection(reference);
@@ -455,39 +469,69 @@ export default class LinearPlugin extends Plugin {
 
     // Enhanced sync with conflict detection
     async syncWithConflictResolution(): Promise<void> {
-        new Notice('Syncing with conflict detection...');
-        
+        try {
+            const syncResult = await this.runTopLevelSync({
+                startNotice: 'Syncing with conflict detection...',
+                resolveConflicts: true
+            });
+
+            if (!syncResult) {
+                return;
+            }
+        } catch (error) {
+            debugLog.error('Sync with conflict resolution failed unexpectedly:', error);
+        }
+    }
+
+    private async runTopLevelSync(options: {
+        startNotice?: string;
+        resolveConflicts?: boolean;
+    } = {}): Promise<SyncResult | null> {
+        const { startNotice, resolveConflicts = false } = options;
+        this.lastSyncSummaryNotice = null;
+
+        if (startNotice) {
+            new Notice(startNotice);
+        }
+
         try {
             const syncResult = await this.syncManager.syncAll();
-            
-            if (syncResult.conflicts.length > 0) {
-                new Notice(`${syncResult.conflicts.length} conflicts detected`);
-                
-                const resolutions = await this.conflictResolver.resolveConflicts(syncResult.conflicts);
-                
-                // Apply resolutions
-                for (const [conflictKey, resolution] of Object.entries(resolutions)) {
-                    const [issueId, field] = conflictKey.split('-');
-                    const conflict = syncResult.conflicts.find(c => c.issueId === issueId && c.field === field);
-                    
-                    if (conflict) {
-                        await this.applyConflictResolution(conflict, resolution);
-                        this.conflictHistory.addConflict(conflict);
-                    }
-                }
-                
-                new Notice('Conflicts resolved and sync completed');
-            } else {
-                new Notice(`Sync completed: ${syncResult.created} created, ${syncResult.updated} updated`);
+
+            if (resolveConflicts) {
+                await this.resolveSyncConflicts(syncResult);
             }
-            
+
             if (syncResult.errors.length > 0) {
                 debugLog.error('Sync errors:', syncResult.errors);
-                new Notice(`${syncResult.errors.length} errors occurred during sync`);
             }
+
+            const summary = formatSyncSummaryNoticeText(syncResult);
+            this.lastSyncSummaryNotice = summary;
+            new Notice(summary, SYNC_NOTICE_DURATION);
+            return syncResult;
         } catch (error) {
             new Notice(`Sync failed: ${(error as Error).message}`);
             debugLog.error('Sync error:', error);
+            return null;
+        }
+    }
+
+    private async resolveSyncConflicts(syncResult: SyncResult): Promise<void> {
+        if (syncResult.conflicts.length === 0) {
+            return;
+        }
+
+        new Notice(`${syncResult.conflicts.length} conflicts detected`);
+        const resolutions = await this.conflictResolver.resolveConflicts(syncResult.conflicts);
+
+        for (const [conflictKey, resolution] of Object.entries(resolutions)) {
+            const [issueId, field] = conflictKey.split('-');
+            const conflict = syncResult.conflicts.find(c => c.issueId === issueId && c.field === field);
+
+            if (conflict) {
+                await this.applyConflictResolution(conflict, resolution);
+                this.conflictHistory.addConflict(conflict);
+            }
         }
     }
 
@@ -528,27 +572,28 @@ export default class LinearPlugin extends Plugin {
     }
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-        debugLog.log('Settings loaded:', {
-            apiKey: !!this.settings.apiKey,
-            teamId: !!this.settings.teamId,
-            autocompleteEnabled: this.settings.autocompleteEnabled
-        });
+        const stored = await this.loadData();
+        if (!stored || stored.settingsVersion !== 2) {
+            if (stored) {
+                // Preserve backup so the user can recover manually
+                await this.saveData({ _backup: stored, ...DEFAULT_SETTINGS });
+                new Notice(
+                    'Linear Integration: settings were reset due to a version change. ' +
+                    'Your previous settings are backed up under the "_backup" key.',
+                    8000
+                );
+            } else {
+                await this.saveData(DEFAULT_SETTINGS);
+            }
+            this.settings = Object.assign({}, DEFAULT_SETTINGS);
+        } else {
+            this.settings = Object.assign({}, DEFAULT_SETTINGS, stored);
+        }
     }
 
     async saveSettings() {
+        this._clientCache.clear();
         await this.saveData(this.settings);
-
-        // Update debug mode when settings change        
         debugLog.setDebugMode(this.settings.debugMode);
-        
-        // Reinitialize components that depend on settings
-        if (this.settings.autocompleteEnabled && !this.autocompleteSystem) {
-            this.autocompleteSystem = new LinearAutocompleteSystem(this.app, this.linearClient, this.settings, this.localConfigManager);
-            this.registerEditorSuggest(this.autocompleteSystem);
-        } else if (!this.settings.autocompleteEnabled && this.autocompleteSystem) {
-            // Would need to unregister autocomplete
-        }
     }
 }
-

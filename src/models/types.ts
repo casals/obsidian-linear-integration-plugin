@@ -1,17 +1,30 @@
 import { TFile } from 'obsidian';
-export interface LinearPluginSettings {
+
+export interface LinearWorkspace {
+    id: string;           // locally-generated UUID
+    name: string;         // user display name, e.g. "Work", "Personal"
     apiKey: string;
-    teamId: string;
-    syncFolder: string;
+    syncFolder: string;   // vault path for this workspace's notes
+    teamIds: string[];    // empty = sync all teams; non-empty = one call per teamId
+    cachedTeams?: { id: string; name: string; key?: string }[];  // persisted after Test Connection
+    cachedUsers?: { id: string; name: string; email: string }[];
+    cachedProjects?: { id: string; name: string; description?: string; teamIds?: string[] }[];
+    defaultTeamId?: string;
+    defaultAssigneeId?: string;
+    defaultProjectId?: string;
+    lastSyncTime?: string;
+    enabled: boolean;
+}
+
+export interface LinearPluginSettings {
+    workspaces: LinearWorkspace[];
+    settingsVersion: number;
+    defaultWorkspaceId: string | null;
     autoSync: boolean;
-    autoSyncInterval: number; // minutes
-    includeDescription: boolean;
+    autoSyncInterval: number;
     includeComments: boolean;
     statusMapping: Record<string, string>;
-    noteTemplate: string;
     secureTokenStorage: boolean;
-    multiWorkspaceSupport: boolean;
-    workspaces: LinearWorkspace[];
     inlineCommentMirroring: boolean;
     kanbanGeneration: boolean;
     agendaGeneration: boolean;
@@ -20,18 +33,16 @@ export interface LinearPluginSettings {
     autocompleteEnabled: boolean;
     quickEditEnabled: boolean;
     tooltipsEnabled: boolean;
-    lastSyncTime?: string;
     autoFillFromExpressions: boolean;
     debugMode: boolean;
 }
 
 export const DEFAULT_SETTINGS: LinearPluginSettings = {
-    apiKey: '',
-    teamId: '',
-    syncFolder: 'Linear Issues',
+    workspaces: [],
+    settingsVersion: 2,
+    defaultWorkspaceId: null,
     autoSync: false,
     autoSyncInterval: 15,
-    includeDescription: true,
     includeComments: false,
     statusMapping: {
         'Todo': '📋',
@@ -39,25 +50,7 @@ export const DEFAULT_SETTINGS: LinearPluginSettings = {
         'Done': '✅',
         'Canceled': '❌'
     },
-    noteTemplate: `# {{title}}
-
-**Status:** {{status}}
-**Assignee:** {{assignee}}
-**Team:** {{team}}
-**Created:** {{created}}
-**Updated:** {{updated}}
-
-## Description
-{{description}}
-
-## Linear Link
-[Open in Linear]({{url}})
-
----
-*Last synced: {{lastSync}}*`,
     secureTokenStorage: true,
-    multiWorkspaceSupport: false,
-    workspaces: [],
     inlineCommentMirroring: true,
     kanbanGeneration: false,
     agendaGeneration: false,
@@ -90,6 +83,10 @@ export interface LinearIssue {
         name: string;
         key: string;
     };
+    project?: {
+        id: string;
+        name: string;
+    };
     priority: number;
     estimate?: number;
     dueDate?: string;
@@ -107,9 +104,9 @@ export interface LinearIssue {
         nodes: Array<{
             id: string;
             body: string;
-            user: {
+            user?: {
                 name: string;
-            };
+            } | null;
             createdAt: string;
         }>;
     };
@@ -134,12 +131,35 @@ export interface LinearUser {
     email: string;
 }
 
+export interface LinearProject {
+    id: string;
+    name: string;
+    description?: string;
+    teamIds?: string[];
+}
+
+export interface LinearDocument {
+    id: string;
+    title: string;
+    content: string;
+    url?: string;
+    updatedAt: string;
+}
+
 export interface NoteFrontmatter {
+    linear_workspace_id?: string;
     linear_id?: string;
     linear_identifier?: string;
+    linear_title?: string;
+    linear_description?: string;
     linear_status?: string;
+    linear_status_id?: string;
     linear_assignee?: string;
+    linear_assignee_id?: string;
+    linear_project?: string;
+    linear_project_id?: string;
     linear_team?: string;
+    linear_team_id?: string;
     linear_url?: string;
     linear_created?: string;
     linear_updated?: string;
@@ -147,6 +167,10 @@ export interface NoteFrontmatter {
     linear_priority?: number;
     linear_estimate?: number;
     linear_labels?: string[];
+    linear_document_id?: string;
+    linear_document_title?: string;
+    linear_document_updated?: string;
+    linear_document_source_path?: string;
 }
 
 export interface SyncResult {
@@ -154,13 +178,6 @@ export interface SyncResult {
     updated: number;
     errors: string[];
     conflicts: ConflictInfo[];
-}
-
-export interface LinearWorkspace {
-    id: string;
-    name: string;
-    apiKey: string;
-    isDefault: boolean;
 }
 
 export interface ConflictInfo {
@@ -183,7 +200,7 @@ export interface LinearNoteConfig {
 }
 
 export interface InlineTag {
-    type: 'status' | 'assignee' | 'priority' | 'label' | 'project';
+    type: 'team' | 'status' | 'assignee' | 'priority' | 'label' | 'project';
     value: string;
     position: { start: number; end: number };
 }

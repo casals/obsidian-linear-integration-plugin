@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump version in manifest.json and versions.json
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const tag = process.env.TAG;
+            const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+            manifest.version = tag;
+            fs.writeFileSync('manifest.json', JSON.stringify(manifest, null, 4));
+            const versions = JSON.parse(fs.readFileSync('versions.json', 'utf8'));
+            versions[tag] = manifest.minAppVersion;
+            fs.writeFileSync('versions.json', JSON.stringify(versions, null, 2));
+            console.log('Bumped to', tag);
+          "
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" \
+            main.js manifest.json styles.css \
+            --title "$TAG" \
+            --notes "Release $TAG"

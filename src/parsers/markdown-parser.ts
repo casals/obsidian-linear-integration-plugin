@@ -1,13 +1,15 @@
-import { App, TFile, CachedMetadata } from 'obsidian';
+import { App, TFile } from 'obsidian';
 import { InlineTag, LinearNoteConfig } from '../models/types';
+import { parseFrontmatter } from '../utils/frontmatter';
 
 export class MarkdownParser {
     private static readonly TAG_PATTERNS = {
-        status: /@status\/([^\s]+)/g,
-        assignee: /@assignee\/([^\s]+)/g,
+        team: /@team\/([^@\r\n]+)/g,
+        status: /@status\/([^@\r\n]+)/g,
+        assignee: /@assignee\/([^@\r\n]+)/g,
         priority: /@priority\/(\d+)/g,
-        label: /#([^\s#]+)/g,
-        project: /@project\/([^\s]+)/g
+        label: /@label\/([^@\r\n]+)/g,
+        project: /@project\/([^@\r\n]+)/g
     };
 
     static parseInlineTags(content: string): InlineTag[] {
@@ -34,12 +36,10 @@ export class MarkdownParser {
     static parseNoteConfig(app: App, file: TFile, content: string): LinearNoteConfig {
         const config: LinearNoteConfig = {};
         
-        // Parse frontmatter config using metadata cache
-        const cachedMetadata: CachedMetadata | null = app.metadataCache.getFileCache(file);
-        
-        if (cachedMetadata?.frontmatter?.linear_config) {
-            const linearConfig = cachedMetadata.frontmatter.linear_config;
-            
+        // Parse frontmatter config using the shared parseFrontmatter utility
+        const linearConfig = (parseFrontmatter(app, file) as any).linear_config;
+
+        if (linearConfig) {
             if (linearConfig.workspace) config.workspace = linearConfig.workspace;
             if (linearConfig.team) config.team = linearConfig.team;
             if (linearConfig.project) config.project = linearConfig.project;
@@ -59,11 +59,16 @@ export class MarkdownParser {
                 case 'assignee':
                     config.assignee = tag.value;
                     break;
+                case 'team':
+                    config.team = tag.value;
+                    break;
                 case 'priority':
                     config.priority = parseInt(tag.value);
                     break;
                 case 'project':
                     config.project = tag.value;
+                    break;
+                case 'status':
                     break;
                 case 'label':
                     if (!config.labels) config.labels = [];
@@ -79,7 +84,10 @@ export class MarkdownParser {
 
     static convertToLinearDescription(content: string): string {
         // Remove frontmatter
-        let description = content.replace(/^---\n[\s\S]*?\n---\n?/, '');
+        let description = this.stripFrontmatter(content);
+
+        // Remove the first heading because title is stored separately.
+        description = description.replace(/^#\s+.+\n/, '');
         
         // Remove inline tags for cleaner Linear description
         Object.values(this.TAG_PATTERNS).forEach(pattern => {
@@ -91,6 +99,10 @@ export class MarkdownParser {
         description = this.convertObsidianToLinear(description);
         
         return description.trim();
+    }
+
+    static convertToLinearDocumentContent(content: string): string {
+        return this.convertObsidianToLinear(this.stripFrontmatter(content)).trim();
     }
 
     private static convertObsidianToLinear(content: string): string {
@@ -110,6 +122,10 @@ export class MarkdownParser {
         });
         
         return content;
+    }
+
+    private static stripFrontmatter(content: string): string {
+        return content.replace(/^---\n[\s\S]*?\n---\n?/, '');
     }
 
     static extractTitle(content: string): string {

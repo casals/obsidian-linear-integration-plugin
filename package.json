@@ -1,6 +1,6 @@
 {
   "name": "linear-integration-plugin",
-  "version": "1.0.0",
+  "version": "1.2.1",
   "description": "Comprehensive Linear (https://linear.app) integration plugin for Obsidian with bidirectional sync, autocomplete, and advanced features. Create, update, and track Linear issues directly from your vault.",
   "main": "main.js",
   "scripts": {
@@ -12,6 +12,9 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf main.js main.js.map",
     "test": "jest",
+    "e2e": "tsx scripts/e2e/run.ts --suite full",
+    "e2e:smoke": "tsx scripts/e2e/run.ts --suite smoke",
+    "e2e:list": "tsx scripts/e2e/run.ts --suite list",
     "release": "npm run build && npm run version"
   },
   "keywords": [
@@ -54,7 +57,9 @@
     "obsidian": "^1.4.16",
     "ts-jest": "^29.1.1",
     "tslib": "^2.6.2",
-    "typescript": "^5.9.3"
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "yaml": "^2.8.2"
   },
   "peerDependencies": {
     "obsidian": "^1.0.0"
