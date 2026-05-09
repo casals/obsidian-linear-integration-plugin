@@ -1,6 +1,17 @@
 import { TFile } from 'obsidian';
+
+export interface TeamSyncConfig {
+    teamId: string;
+    teamName: string;
+    teamKey: string;
+    syncFolder: string;
+    enabled: boolean;
+}
+
 export interface LinearPluginSettings {
     apiKey: string;
+    teamSyncConfigs: TeamSyncConfig[];
+    // Legacy single-team fields kept for backward compatibility
     teamId: string;
     syncFolder: string;
     autoSync: boolean;
@@ -27,6 +38,7 @@ export interface LinearPluginSettings {
 
 export const DEFAULT_SETTINGS: LinearPluginSettings = {
     apiKey: '',
+    teamSyncConfigs: [],
     teamId: '',
     syncFolder: 'Linear Issues',
     autoSync: false,

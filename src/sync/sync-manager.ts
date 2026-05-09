@@ -2,7 +2,7 @@ import { debugLog } from '../utils/debug';
 import { getFolderByPath } from '../utils/file-utils';
 import { App, TFile } from 'obsidian';
 import { LinearClient } from '../api/linear-client';
-import { LinearIssue, LinearPluginSettings, NoteFrontmatter, SyncResult } from '../models/types';
+import { LinearIssue, LinearPluginSettings, NoteFrontmatter, SyncResult, TeamSyncConfig } from '../models/types';
 import { parseFrontmatter, updateFrontmatter } from '../utils/frontmatter';
 
 export class SyncManager {
@@ -22,31 +22,52 @@ export class SyncManager {
         };
 
         try {
-            // Ensure sync folder exists
-            await this.ensureSyncFolder();
+            // Build list of team configs to sync
+            const teamConfigs: TeamSyncConfig[] = (this.settings.teamSyncConfigs ?? []).filter(c => c.enabled);
 
-            // Get last sync time
-            const lastSync = await this.getLastSyncTime();
+            // Fall back to legacy single-team config if no multi-team configs defined
+            if (teamConfigs.length === 0 && this.settings.teamId) {
+                teamConfigs.push({
+                    teamId: this.settings.teamId,
+                    teamName: 'Default',
+                    teamKey: '',
+                    syncFolder: this.settings.syncFolder || 'Linear Issues',
+                    enabled: true
+                });
+            }
 
-            // Fetch issues from Linear
-            const issues = await this.linearClient.getIssues(
-                this.settings.teamId || undefined,
-                lastSync
-            );
+            if (teamConfigs.length === 0) {
+                result.errors.push('No teams configured. Add at least one team in plugin settings.');
+                return result;
+            }
 
-            // Process each issue
-            for (const issue of issues) {
+            // For multi-team sync, always do a full pull per team so each team's
+            // folder stays complete regardless of the global lastSyncTime stamp.
+            // For legacy single-team fallback, honour lastSyncTime for incremental sync.
+            const isMultiTeam = (this.settings.teamSyncConfigs ?? []).filter(c => c.enabled).length > 0;
+            const lastSync = isMultiTeam ? undefined : await this.getLastSyncTime();
+
+            // Sync each team into its own folder
+            for (const config of teamConfigs) {
                 try {
-                    const file = await this.findOrCreateNoteForIssue(issue);
-                    const wasCreated = await this.updateNoteWithIssue(file, issue);
-                    
-                    if (wasCreated) {
-                        result.created++;
-                    } else {
-                        result.updated++;
+                    await this.ensureSyncFolder(config.syncFolder);
+                    const issues = await this.linearClient.getIssues(config.teamId, lastSync);
+
+                    for (const issue of issues) {
+                        try {
+                            const file = await this.findOrCreateNoteForIssue(issue, config.syncFolder);
+                            const wasCreated = await this.updateNoteWithIssue(file, issue);
+                            if (wasCreated) {
+                                result.created++;
+                            } else {
+                                result.updated++;
+                            }
+                        } catch (error) {
+                            result.errors.push(`Failed to sync issue ${issue.identifier}: ${(error as Error).message}`);
+                        }
                     }
                 } catch (error) {
-                    result.errors.push(`Failed to sync issue ${issue.identifier}: ${(error as Error).message}`);
+                    result.errors.push(`Failed to sync team "${config.teamName}": ${(error as Error).message}`);
                 }
             }
 
@@ -60,12 +81,11 @@ export class SyncManager {
         return result;
     }
 
-    async findOrCreateNoteForIssue(issue: LinearIssue): Promise<TFile> {
-        //Refactored to avoid type assertion
-        const syncFolder = getFolderByPath(this.app.vault, this.settings.syncFolder);
-        
-        // Try to find existing note by Linear ID
-        for (const file of syncFolder.children) {
+    async findOrCreateNoteForIssue(issue: LinearIssue, syncFolder: string): Promise<TFile> {
+        const folder = getFolderByPath(this.app.vault, syncFolder);
+
+        // Try to find existing note by Linear ID in this folder
+        for (const file of folder.children) {
             if (file instanceof TFile && file.extension === 'md') {
                 const frontmatter = await this.getFrontmatter(file);
                 if (frontmatter.linear_id === issue.id || frontmatter.linear_identifier === issue.identifier) {
@@ -74,10 +94,10 @@ export class SyncManager {
             }
         }
 
-        // Create new note
+        // Create new note in the team's folder
         const filename = this.sanitizeFilename(`${issue.identifier} - ${issue.title}.md`);
-        const filepath = `${this.settings.syncFolder}/${filename}`;
-        
+        const filepath = `${syncFolder}/${filename}`;
+
         const content = this.generateNoteContent(issue);
         return await this.app.vault.create(filepath, content);
     }
@@ -165,10 +185,10 @@ export class SyncManager {
         return yamlLines.join('\n') + content;
     }
 
-    private async ensureSyncFolder(): Promise<void> {
-        const folder = this.app.vault.getAbstractFileByPath(this.settings.syncFolder);
+    private async ensureSyncFolder(syncFolder: string): Promise<void> {
+        const folder = this.app.vault.getAbstractFileByPath(syncFolder);
         if (!folder) {
-            await this.app.vault.createFolder(this.settings.syncFolder);
+            await this.app.vault.createFolder(syncFolder);
         }
     }
 

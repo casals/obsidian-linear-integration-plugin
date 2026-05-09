@@ -123,7 +123,20 @@ export default class LinearPlugin extends Plugin {
             id: 'sync-linear-issues',
             name: 'Sync Linear issues',
             callback: async () => {
-                await this.syncManager.syncAll();
+                new Notice('Syncing Linear issues...');
+                try {
+                    const result = await this.syncManager.syncAll();
+                    const teams = (this.settings.teamSyncConfigs ?? []).filter(c => c.enabled).length;
+                    const teamLabel = teams > 1 ? `${teams} teams` : 'Linear';
+                    new Notice(`✅ ${teamLabel} synced — ${result.created} created, ${result.updated} updated`);
+                    if (result.errors.length > 0) {
+                        new Notice(`⚠️ ${result.errors.length} error(s) during sync — check console`);
+                        debugLog.error('Sync errors:', result.errors);
+                    }
+                } catch (error) {
+                    new Notice(`❌ Sync failed: ${(error as Error).message}`);
+                    debugLog.error('Sync error:', error);
+                }
             }
         });
 

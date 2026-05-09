@@ -14,6 +14,7 @@ A comprehensive Linear integration plugin for Obsidian that provides seamless bi
 - **💡 Interactive Tooltips**: Hover over issue links to see instant previews with actions
 
 ### Advanced Sync Features
+- **🗂️ Multi-team Sync**: Sync multiple Linear teams into separate vault folders simultaneously
 - **⚔️ Intelligent Conflict Resolution**: Smart detection and resolution of sync conflicts
 - **🤖 Auto-fill from Expressions**: Automatically populate issue fields from note content
 - **🏷️ Dynamic Label Creation**: Automatically create new labels when they don't exist
@@ -119,6 +120,36 @@ Type any of the tag prefixes and see instant suggestions:
 - `@status/` → Shows workflow states
 - `@label/` → Shows existing labels with colors
 
+### Multi-team Sync
+
+If you work across multiple Linear teams or projects, you can sync each team into its own vault folder simultaneously.
+
+**Setup:**
+
+1. Open Settings → Linear Integration → **Team Sync** section
+2. Click **+ Add team** — your teams load automatically from Linear
+3. Select a team and set its vault folder (e.g. `Linear Issues/Golden Wealth`)
+4. Repeat for each team
+5. Each team has an enable/disable toggle so you can pause a project without removing it
+6. Run **Sync Linear Issues** — each team's issues appear in their own folder as editable notes
+
+**Example layout:**
+```
+Linear Issues/
+  Golden Wealth/          ← GW team issues
+    GW-1 - Insurance Policy Inventory.md
+    GW-2 - Power of Attorney Builder.md
+    ...
+  Engineering/            ← ENG team issues
+    ENG-42 - Fix login bug.md
+    ...
+  Marketing/              ← MKT team issues
+    MKT-7 - Q3 campaign brief.md
+    ...
+```
+
+Each sync does a full pull per team, so all issues stay current regardless of when you last synced. The legacy single-team **Default Team** + **Sync Folder** settings remain as a fallback when no team sync configs are defined.
+
 ### Local Configuration
 
 Create `.linear.json` files in any folder to customize behavior:
@@ -214,8 +245,9 @@ Available variables:
 | Setting | Description | Default |
 |---------|-------------|---------|
 | **API Key** | Your Linear Personal API Key | - |
-| **Default Team** | Default team for new issues | - |
-| **Sync Folder** | Folder for Linear notes | "Linear Issues" |
+| **Team Sync Configs** | List of teams to sync, each with its own vault folder | [] |
+| **Default Team** | Fallback team for new issues (used when no team sync configs defined) | - |
+| **Sync Folder** | Fallback folder for Linear notes (used when no team sync configs defined) | "Linear Issues" |
 | **Auto Sync** | Sync on startup | false |
 | **Sync Interval** | Minutes between auto-syncs | 15 |
 | **Auto-fill from Expressions** | Parse note content to pre-fill modal | true |

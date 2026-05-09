@@ -1,7 +1,104 @@
 import { debugLog } from '../utils/debug';
 import { setDefaultOption } from '../utils/dom-utils';
-import { App, PluginSettingTab, Setting, Notice, Modal } from 'obsidian'; 
+import { App, PluginSettingTab, Setting, Notice, Modal } from 'obsidian';
 import LinearPlugin from '../../main';
+import { TeamSyncConfig } from '../models/types';
+
+class AddTeamModal extends Modal {
+    private teamId: string = '';
+    private teamName: string = '';
+    private teamKey: string = '';
+    private syncFolder: string = '';
+    private onSubmit: (config: TeamSyncConfig) => void;
+    private availableTeams: { id: string; name: string; key: string }[] = [];
+
+    constructor(
+        app: App,
+        onSubmit: (config: TeamSyncConfig) => void,
+        availableTeams: { id: string; name: string; key: string }[] = []
+    ) {
+        super(app);
+        this.onSubmit = onSubmit;
+        this.availableTeams = availableTeams;
+    }
+
+    onOpen(): void {
+        const { contentEl } = this;
+        contentEl.empty();
+        new Setting(contentEl).setName('Add team sync').setHeading();
+
+        if (this.availableTeams.length > 0) {
+            new Setting(contentEl)
+                .setName('Team')
+                .setDesc('Select a Linear team to sync')
+                .addDropdown(dropdown => {
+                    dropdown.addOption('', 'Select a team...');
+                    this.availableTeams.forEach(t => dropdown.addOption(t.id, `${t.name} (${t.key})`));
+                    dropdown.onChange(value => {
+                        const team = this.availableTeams.find(t => t.id === value);
+                        if (team) {
+                            this.teamId = team.id;
+                            this.teamName = team.name;
+                            this.teamKey = team.key;
+                            if (!this.syncFolder) {
+                                this.syncFolder = `Linear Issues/${team.name}`;
+                                const folderInput = contentEl.querySelector('input[placeholder*="Linear Issues"]') as HTMLInputElement;
+                                if (folderInput) folderInput.value = this.syncFolder;
+                            }
+                        }
+                    });
+                });
+        } else {
+            new Setting(contentEl)
+                .setName('Team ID')
+                .setDesc('Linear team ID')
+                .addText(text => text
+                    .setPlaceholder('e.g. 3f67f930-...')
+                    .onChange(value => { this.teamId = value; }));
+
+            new Setting(contentEl)
+                .setName('Team name')
+                .addText(text => text
+                    .setPlaceholder('e.g. Golden Wealth')
+                    .onChange(value => { this.teamName = value; }));
+
+            new Setting(contentEl)
+                .setName('Team key')
+                .addText(text => text
+                    .setPlaceholder('e.g. GW')
+                    .onChange(value => { this.teamKey = value; }));
+        }
+
+        new Setting(contentEl)
+            .setName('Sync folder')
+            .setDesc('Vault folder where this team\'s issues will be synced')
+            .addText(text => {
+                text.setPlaceholder('Linear Issues/Golden Wealth')
+                    .setValue(this.syncFolder)
+                    .onChange(value => { this.syncFolder = value; });
+                return text;
+            });
+
+        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+        const addButton = buttonContainer.createEl('button', { text: 'Add team', cls: 'mod-cta' });
+        addButton.onclick = () => this.submit();
+        const cancelButton = buttonContainer.createEl('button', { text: 'Cancel' });
+        cancelButton.onclick = () => this.close();
+    }
+
+    private submit(): void {
+        if (!this.teamId || !this.teamName || !this.syncFolder) {
+            new Notice('Please fill in all fields');
+            return;
+        }
+        this.onSubmit({ teamId: this.teamId, teamName: this.teamName, teamKey: this.teamKey, syncFolder: this.syncFolder, enabled: true });
+        this.close();
+    }
+
+    onClose(): void {
+        this.contentEl.empty();
+    }
+}
 
 class StatusMappingModal extends Modal {
     private statusName: string = '';
@@ -180,35 +277,99 @@ export class LinearSettingsTab extends PluginSettingTab {
                     }
                 }));
 
-        // Team selection
+
+        // ── Multi-team sync configuration ──────────────────────────────────────
+        new Setting(containerEl).setName('Team sync').setHeading();
         new Setting(containerEl)
-            .setName('Default team')
-            .setDesc('Select the Linear team to sync with')
-            .addDropdown(dropdown => {
-                dropdown.addOption('', 'Select a team...');
-                dropdown.setValue(this.plugin.settings.teamId);
-                dropdown.onChange(async (value) => {
-                    this.plugin.settings.teamId = value;
-                    await this.plugin.saveSettings();
+            .setName('Team sync configurations')
+            .setDesc('Sync multiple Linear teams into separate vault folders. Each team gets its own folder.');
+
+        const configs = this.plugin.settings.teamSyncConfigs ?? [];
+
+        if (configs.length === 0) {
+            containerEl.createEl('p', {
+                text: 'No teams configured. Add a team below.',
+                cls: 'setting-item-description'
+            });
+        }
+
+        configs.forEach((config, index) => {
+            const setting = new Setting(containerEl)
+                .setName(`${config.teamName} (${config.teamKey || config.teamId.slice(0, 8)})`)
+                .setDesc(`→ ${config.syncFolder}`)
+                .addToggle(toggle => toggle
+                    .setValue(config.enabled)
+                    .setTooltip('Enable/disable sync for this team')
+                    .onChange(async (value) => {
+                        this.plugin.settings.teamSyncConfigs[index].enabled = value;
+                        await this.plugin.saveSettings();
+                    }))
+                .addButton(button => button
+                    .setButtonText('Remove')
+                    .setWarning()
+                    .onClick(async () => {
+                        this.plugin.settings.teamSyncConfigs.splice(index, 1);
+                        await this.plugin.saveSettings();
+                        this.display();
+                    }));
+            setting.settingEl.style.borderLeft = config.enabled ? '3px solid var(--interactive-accent)' : '3px solid var(--background-modifier-border)';
+        });
+
+        new Setting(containerEl)
+            .setName('Add team')
+            .setDesc('Add a new team to sync')
+            .addButton(button => button
+                .setButtonText('+ Add team')
+                .setCta()
+                .onClick(async () => {
+                    let teams: { id: string; name: string; key: string }[] = [];
+                    if (this.plugin.settings.apiKey) {
+                        try {
+                            teams = await this.plugin.linearClient.getTeams();
+                        } catch {
+                            // proceed without team list
+                        }
+                    }
+                    new AddTeamModal(this.app, async (config) => {
+                        if (!this.plugin.settings.teamSyncConfigs) {
+                            this.plugin.settings.teamSyncConfigs = [];
+                        }
+                        this.plugin.settings.teamSyncConfigs.push(config);
+                        await this.plugin.saveSettings();
+                        new Notice(`✅ Added team "${config.teamName}" → ${config.syncFolder}`);
+                        this.display();
+                    }, teams).open();
+                }));
+
+        // ── Legacy single-team fallback (shown only when no multi-team configs) ──
+        if (configs.length === 0) {
+            new Setting(containerEl).setName('Legacy fallback').setHeading();
+            new Setting(containerEl)
+                .setName('Default team')
+                .setDesc('Used only when no team sync configs are defined above')
+                .addDropdown(dropdown => {
+                    dropdown.addOption('', 'Select a team...');
+                    dropdown.setValue(this.plugin.settings.teamId);
+                    dropdown.onChange(async (value) => {
+                        this.plugin.settings.teamId = value;
+                        await this.plugin.saveSettings();
+                    });
+                    if (this.plugin.settings.apiKey) {
+                        this.loadTeamsIntoDropdown(dropdown);
+                    }
                 });
 
-                // Load teams if API key is available
-                if (this.plugin.settings.apiKey) {
-                    this.loadTeamsIntoDropdown(dropdown);
-                }
-            });
-
-        // Sync folder setting
-        new Setting(containerEl)
-            .setName('Sync folder')
-            .setDesc('Folder where Linear issues will be synced')
-            .addText(text => text
-                .setPlaceholder('Linear Issues')
-                .setValue(this.plugin.settings.syncFolder)
-                .onChange(async (value) => {
-                    this.plugin.settings.syncFolder = value;
-                    await this.plugin.saveSettings();
-                }));
+            new Setting(containerEl)
+                .setName('Sync folder')
+                .setDesc('Folder where Linear issues will be synced (legacy single-team)')
+                .addText(text => text
+                    .setPlaceholder('Linear Issues')
+                    .setValue(this.plugin.settings.syncFolder)
+                    .onChange(async (value) => {
+                        this.plugin.settings.syncFolder = value;
+                        await this.plugin.saveSettings();
+                    }));
+        }
 
         new Setting(containerEl).setName('Synchronization').setHeading();
 
